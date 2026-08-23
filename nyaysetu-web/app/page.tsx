@@ -146,7 +146,7 @@ export default function NyaySetuPreview() {
 
   const loadHistory = async (t: string) => {
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/history", {
+      const res = await fetch("https://nyaysetu-1qbc.onrender.com/api/history", {
         headers: { "Authorization": `Bearer ${t}` }
       });
       if (res.ok) {
@@ -164,7 +164,7 @@ export default function NyaySetuPreview() {
   const handleAuth = async (e: any) => {
     e.preventDefault();
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/auth/${authMode}`, {
+      const res = await fetch(`https://nyaysetu-1qbc.onrender.com/api/auth/${authMode}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password })
@@ -239,7 +239,7 @@ export default function NyaySetuPreview() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/chat", {
+      const response = await fetch("https://nyaysetu-1qbc.onrender.com/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify({ query: input, message: input, language: language }),
@@ -276,7 +276,7 @@ export default function NyaySetuPreview() {
     if (isGenerating) return;
     setIsGenerating(true);
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/generate-notice", {
+      const res = await fetch("https://nyaysetu-1qbc.onrender.com/api/generate-notice", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ issue_description: text, language: language })
@@ -383,7 +383,7 @@ export default function NyaySetuPreview() {
             <GoogleLogin
               onSuccess={async (credentialResponse: any) => {
                 try {
-                  const res = await fetch("http://127.0.0.1:8000/api/auth/google", {
+                  const res = await fetch("https://nyaysetu-1qbc.onrender.com/api/auth/google", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ token: credentialResponse.credential })
