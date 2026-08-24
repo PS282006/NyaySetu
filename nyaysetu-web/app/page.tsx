@@ -620,7 +620,7 @@ export default function NyaySetuPreview() {
   };
 
   const getActionType = (msg: any): "civil" | "criminal" | "none" => {
-    if (!msg || !msg.content || msg.content.includes("🚨")) return "none";
+    if (!msg || !msg.content || msg.content.includes("🚨") || msg.content.includes("Unable to reach")) return "none";
     const text = (msg.content + " " + (msg.citations || []).join(" ")).toLowerCase();
     
     // Pure greetings or small talk have no legal action
