@@ -18,6 +18,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, PlainTextResponse, JSONResponse
 import traceback
 
+from langchain_chroma import Chroma
+from langchain_groq import ChatGroq
+from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
+from langchain_core.prompts import ChatPromptTemplate
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+from datetime import datetime
+
 app = FastAPI(title="NyaySetu Legal API")
 
 @app.exception_handler(Exception)
