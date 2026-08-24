@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { GoogleLogin } from "@react-oauth/google";
-import { Globe, ChevronDown, Sun, Moon, FileText, Scale, Mic, Send, User, Copy, Check, ThumbsUp, Home, Shield, Briefcase } from "lucide-react";
+import { LogOut, Globe, ChevronDown, Sun, Moon, FileText, Scale, Mic, Send, User, Copy, Check, ThumbsUp, Home, Shield, Briefcase } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
 declare global {
@@ -518,35 +518,38 @@ export default function NyaySetuPreview() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <button 
               onClick={handleLogout}
-              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-full border text-[10px] sm:text-xs font-semibold notranslate transition-opacity hover:opacity-80"
+              className="flex items-center justify-center w-7 h-7 sm:w-auto sm:h-auto gap-1.5 sm:px-3 sm:py-1.5 rounded-full border text-xs font-semibold notranslate transition-opacity hover:opacity-80"
               style={{ borderColor: palette.pillBorder, color: palette.heading, background: palette.pillBg }}
               title="Sign Out"
             >
-              <span className="hidden sm:inline">Log Out</span><span className="sm:hidden">Exit</span>
+              <LogOut size={13} className="sm:hidden" />
+              <span className="hidden sm:inline">Log Out</span>
             </button>
             <a 
               href="https://nalsa.gov.in" 
               target="_blank" 
               rel="noreferrer"
-              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-full border text-[10px] sm:text-xs font-semibold notranslate transition-opacity hover:opacity-80"
+              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border text-[9px] sm:text-xs font-semibold notranslate transition-opacity hover:opacity-80"
               style={{ borderColor: palette.pillBorder, color: palette.heading, background: palette.pillBg }}
               title="Seek Human Legal Aid"
             >
-              <Scale size={12} className="sm:w-3.5 sm:h-3.5" />
-              <span className="hidden sm:inline">NALSA Legal Aid</span><span className="sm:hidden">NALSA</span>
+              <Scale size={13} />
+              <span className="hidden sm:inline">NALSA Legal Aid</span>
+              <span className="sm:hidden">NALSA</span>
             </a>
             <div className="relative">
               <button
                 onClick={() => setLangMenuOpen((o) => !o)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium notranslate"
+                className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border text-[10px] sm:text-sm font-medium notranslate"
                 style={{ background: palette.pillBg, borderColor: palette.pillBorder, color: palette.heading }}
               >
-                <Globe size={14} />
-                {LANGUAGE_LABELS[language]}
-                <ChevronDown size={12} />
+                <Globe size={13} />
+                <span className="hidden sm:inline">{LANGUAGE_LABELS[language]}</span>
+                <span className="sm:hidden uppercase tracking-wider">{language}</span>
+                <ChevronDown size={11} />
               </button>
               {langMenuOpen && (
                 <div
@@ -572,11 +575,11 @@ export default function NyaySetuPreview() {
 
             <button
               onClick={() => setTheme(isDark ? "light" : "dark")}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-bold tracking-wide notranslate"
+              className="flex items-center justify-center w-7 h-7 sm:w-auto sm:h-auto gap-1.5 sm:px-3 sm:py-1.5 rounded-full border text-xs font-bold tracking-wide notranslate"
               style={{ background: palette.pillBg, borderColor: palette.pillBorder, color: palette.heading }}
             >
-              {isDark ? <Moon size={14} /> : <Sun size={14} />}
-              {isDark ? t.dark : t.light}
+              {isDark ? <Moon size={13} /> : <Sun size={13} />}
+              <span className="hidden sm:inline">{isDark ? t.dark : t.light}</span>
             </button>
           </div>
           <div id="google_translate_element" style={{ display: 'none' }}></div>
