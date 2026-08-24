@@ -347,7 +347,7 @@ def process_twilio_reply(phone_number: str, user_text: str):
         print(f"[Twilio Background Error] {e}")
 
 @app.post("/api/auth/google")
-token_data: GoogleToken, db: Session = Depends(get_db)):
+def google_auth(token_data: GoogleToken, db: Session = Depends(get_db)):
     try:
         # Verify the Google token
         client_id = "611241590650-in5gn85q6nmn1g7kctd6vp08udgume1b.apps.googleusercontent.com"
