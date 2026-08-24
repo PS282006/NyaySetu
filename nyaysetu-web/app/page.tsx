@@ -1,3 +1,4 @@
+"use client";
 interface HistoryItem {
   id: number;
   query: string;
@@ -7,7 +8,7 @@ interface HistoryItem {
   created_at?: string;
 }
 
-"use client";
+
 import { useState, useEffect } from "react";
 import { GoogleLogin } from "@react-oauth/google";
 import { History, X, Trash2, Plus, LogOut, Globe, ChevronDown, Sun, Moon, FileText, Scale, Mic, Send, User, Copy, Check, ThumbsUp, Home, Shield, Briefcase } from "lucide-react";
@@ -943,3 +944,5 @@ export default function NyaySetuPreview() {
       )}
 
     </div>
+  );
+}
