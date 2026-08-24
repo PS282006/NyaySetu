@@ -6,6 +6,12 @@ from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from pydantic import BaseModel
 
+
+from fastapi import Depends, HTTPException
+from sqlalchemy.orm import Session
+from db import get_db, User
+from auth import get_password_hash, create_access_token
+
 from fastapi import FastAPI, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, PlainTextResponse
