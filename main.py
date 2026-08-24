@@ -156,7 +156,7 @@ async def chat_endpoint(req: NyaySetuRequest):
     return {
         "reply": response.content,
         "citations": citations,
-        "confidence_score": f"{confidence}%"
+        "confidence_score": confidence
     }
 
 @app.post("/api/generate-notice")
