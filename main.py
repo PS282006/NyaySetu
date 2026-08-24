@@ -39,7 +39,16 @@ def health_check():
 # ==========================================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], 
+    allow_origins=[
+        "http://localhost",
+        "http://localhost:3000",
+        "http://localhost:8000",
+        "https://localhost",
+        "capacitor://localhost",
+        "https://nyay-setu-omega.vercel.app",
+        "https://nyaysetu-1qbc.onrender.com",
+    ],
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1|.*\.vercel\.app|.*\.onrender\.com)(:\d+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
