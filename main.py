@@ -254,6 +254,80 @@ Rules:
     return FileResponse(filename, media_type='application/pdf', filename=filename)
 
 
+
+@app.post("/api/generate-fir")
+async def web_generate_fir(req: NyaySetuNoticeRequest):
+    # 1. Ask LLM to draft a formal police complaint under BNSS 2023 / BNS 2023
+    prompt = f"""You are a senior criminal lawyer in India.
+The complainant wants to file a formal Police Complaint / Application for Registration of FIR based on this context:
+{req.issue_description}
+
+Rules:
+1. Write a formal, precise Police Complaint / Application for FIR.
+2. Complainant details: Use placeholders like [Complainant Name], [Complainant Address], [Phone Number], [Aadhaar/ID].
+3. Police Station details: To The Station House Officer (SHO), [Police Station Name], [City/District].
+4. Incident details: Use placeholders for [Date and Time of Occurrence], [Exact Place of Occurrence], [Details/Description of Accused Persons/Suspects].
+5. Statutory sections: Reference relevant sections of the Bharatiya Nyaya Sanhita (BNS) 2023, Bharatiya Nagarik Suraksha Sanhita (BNSS) 2023, or Information Technology Act 2000 (if cyber).
+6. DO NOT include markdown asterisks (**). Output plain formal text.
+7. ONLY write the body paragraphs describing the facts, offenses, witness list, and formal prayer for investigation and FIR registration."""
+    try:
+        draft = llm.invoke(prompt).content.strip()
+    except Exception as e:
+        draft = req.issue_description
+
+    # 2. Build the PDF
+    filename = "NyaySetu_Police_FIR_Complaint.pdf"
+    doc = SimpleDocTemplate(filename, pagesize=letter, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=36)
+    styles = getSampleStyleSheet()
+    
+    title_style = styles['Heading1']
+    title_style.alignment = 1 
+    
+    sub_style = styles['Normal']
+    sub_style.alignment = 1
+    
+    normal_style = styles['Normal']
+    normal_style.fontSize = 10.5
+    normal_style.spaceAfter = 10
+    normal_style.leading = 15 
+    
+    story = []
+    story.append(Paragraph("<b>FORMAL POLICE COMPLAINT / APPLICATION FOR REGISTRATION OF FIR</b>", title_style))
+    story.append(Paragraph("<font size=9 color='#555555'><i>(Under Section 173 / 175 of the Bharatiya Nagarik Suraksha Sanhita, 2023)</i></font>", sub_style))
+    story.append(Spacer(1, 15))
+    
+    date_str = datetime.now().strftime("%B %d, %Y")
+    story.append(Paragraph(f"<b>Date of Filing:</b> {date_str}", normal_style))
+    story.append(Spacer(1, 6))
+    
+    story.append(Paragraph("<b>To,</b><br/>The Station House Officer (SHO),<br/>[Insert Police Station Name],<br/>[Insert Police Station Address, City, State - Pincode]", normal_style))
+    story.append(Spacer(1, 10))
+    
+    story.append(Paragraph("<b>SUBJECT: APPLICATION FOR REGISTRATION OF FIR AND INITIATION OF CRIMINAL INVESTIGATION</b>", normal_style))
+    story.append(Spacer(1, 10))
+    
+    story.append(Paragraph("Respected Sir/Madam,", normal_style))
+    story.append(Paragraph("I, the undersigned Complainant [Your Name], residing at [Your Complete Address], Contact No: [Your Phone Number], do hereby submit this formal complaint regarding the following criminal incident:", normal_style))
+    
+    clean_draft = draft.replace('₹', 'Rs. ')
+    for p in clean_draft.split('\n'):
+        p = p.strip()
+        if p and not p.startswith("To,") and not p.startswith("SUBJECT:") and not p.startswith("Respected") and not p.startswith("Yours"):
+            story.append(Paragraph(p, normal_style))
+            
+    prayer = "<b>PRAYER / DEMAND FOR ACTION:</b><br/>In light of the aforesaid facts, it is most respectfully prayed that an FIR may kindly be registered under the relevant sections of Bharatiya Nyaya Sanhita (BNS) 2023 against the accused persons, immediate investigation be initiated, relevant evidence/CCTV footage be secured, and necessary legal action be taken against the culprits to protect the Complainant and uphold the rule of law."
+    story.append(Spacer(1, 10))
+    story.append(Paragraph(prayer, normal_style))
+    story.append(Spacer(1, 20))
+    
+    story.append(Paragraph("Yours faithfully,", normal_style))
+    story.append(Spacer(1, 10))
+    story.append(Paragraph("<b>________________________</b><br/><b>[Complainant Signature / Name]</b><br/>Mobile: [Your Phone Number]<br/>Email: [Your Email ID]", normal_style))
+    
+    doc.build(story)
+    return FileResponse(filename, media_type='application/pdf', filename=filename)
+
+
 @app.post("/api/auth/google")
 def google_auth(token_data: GoogleToken, db: Session = Depends(get_db)):
     try:

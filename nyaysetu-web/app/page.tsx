@@ -11,13 +11,15 @@ interface HistoryItem {
 
 import { useState, useEffect } from "react";
 import { GoogleLogin } from "@react-oauth/google";
-import { History, X, Trash2, Plus, LogOut, Globe, ChevronDown, Sun, Moon, FileText, Scale, Mic, Send, User, Copy, Check, ThumbsUp, Home, Shield, Briefcase } from "lucide-react";
+import { History, X, Trash2, Plus, LogOut, Globe, ChevronDown, Sun, Moon, FileText, Scale, Mic, MicOff, Volume2, VolumeX, ShieldAlert, Send, User, Copy, Check, ThumbsUp, Home, Shield, Briefcase } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
 declare global {
   interface Window {
     googleTranslateElementInit: () => void;
     google: any;
+    webkitSpeechRecognition: any;
+    SpeechRecognition: any;
   }
 }
 
@@ -32,6 +34,11 @@ const TRANSLATIONS: any = {
     placeholder: "E.g., My landlord won't return my deposit...",
     send: "Send",
     generateNotice: "Generate Legal Notice",
+    draftFIR: "Draft Police Complaint (FIR)",
+    listen: "Listen to Answer",
+    stopListen: "Stop Audio",
+    voiceInput: "Voice Input (Speak)",
+    listening: "Listening...",
     citedAuthorities: "Cited Authorities",
     emptyState: "Ask a legal question to get started...",
     loading: "NyaySetu is reviewing the laws...",
@@ -92,6 +99,11 @@ const TRANSLATIONS: any = {
     placeholder: "उदा., माझा घरमालक माझी ठेव परत करत नाही...",
     send: "पाठवा",
     generateNotice: "कायदेशीर नोटीस तयार करा",
+    draftFIR: "पोलीस तक्रार (FIR) मसुदा तयार करा",
+    listen: "उत्तर ऐका",
+    stopListen: "ऑडिओ थांबवा",
+    voiceInput: "बोलून टाईप करा",
+    listening: "ऐकत आहे...",
     citedAuthorities: "नमूद केलेले कायदे",
     emptyState: "सुरू करण्यासाठी कायदेशीर प्रश्न विचारा...",
     loading: "न्यायसेतू कायद्यांचे पुनरावलोकन करत आहे...",
@@ -140,6 +152,9 @@ export default function NyaySetuPreview() {
 
   const [input, setInput] = useState("");
   const [historyList, setHistoryList] = useState<HistoryItem[]>([]);
+  const [speakingIndex, setSpeakingIndex] = useState<number | null>(null);
+  const [isListening, setIsListening] = useState(false);
+  const [isGeneratingFIR, setIsGeneratingFIR] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [messages, setMessages] = useState<{role: string, content: string, citations?: string[], confidence_score?: number}[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -335,6 +350,111 @@ export default function NyaySetuPreview() {
       setMessages([...newMessages, { role: "ai", content: "Unable to reach the NyaySetu server. Please check your connection and try again." }]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleSpeak = (text: string, index: number) => {
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+
+    if (speakingIndex === index) {
+      window.speechSynthesis.cancel();
+      setSpeakingIndex(null);
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    
+    // Strip markdown formatting before reading aloud
+    const clean = text
+      .replace(/[*#_`~>|\-]/g, " ")
+      .replace(/\[.*?\]\(.*?\)/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    const utterance = new SpeechSynthesisUtterance(clean);
+    
+    if (language === "hi") {
+      utterance.lang = "hi-IN";
+    } else if (language === "mr") {
+      utterance.lang = "mr-IN";
+    } else {
+      utterance.lang = "en-IN";
+    }
+    
+    utterance.rate = 0.95;
+    utterance.onend = () => setSpeakingIndex(null);
+    utterance.onerror = () => setSpeakingIndex(null);
+    
+    window.speechSynthesis.speak(utterance);
+    setSpeakingIndex(index);
+  };
+
+  const handleVoiceInput = () => {
+    if (typeof window === "undefined") return;
+    
+    const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognitionClass) {
+      alert("Voice typing is not supported in this browser. Please try Google Chrome or Safari.");
+      return;
+    }
+
+    if (isListening) {
+      setIsListening(false);
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognitionClass();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      
+      if (language === "hi") {
+        recognition.lang = "hi-IN";
+      } else if (language === "mr") {
+        recognition.lang = "mr-IN";
+      } else {
+        recognition.lang = "en-IN";
+      }
+
+      recognition.onstart = () => setIsListening(true);
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setInput((prev) => (prev ? `${prev} ${transcript}` : transcript));
+        setIsListening(false);
+      };
+      recognition.onerror = () => setIsListening(false);
+      recognition.onend = () => setIsListening(false);
+
+      recognition.start();
+    } catch (err) {
+      console.error("Speech recognition error:", err);
+      setIsListening(false);
+    }
+  };
+
+  const handleGenerateFIR = async (text: string) => {
+    if (isGeneratingFIR) return;
+    setIsGeneratingFIR(true);
+    try {
+      const res = await fetch("https://nyaysetu-1qbc.onrender.com/api/generate-fir", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ issue_description: text, language: language })
+      });
+      
+      if (!res.ok) throw new Error("Failed to generate Police FIR Complaint PDF");
+      
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "NyaySetu_Police_FIR_Complaint.pdf";
+      a.click();
+    } catch (err) {
+      console.error(err);
+      alert("Error generating the Police FIR Complaint document.");
+    } finally {
+      setIsGeneratingFIR(false);
     }
   };
 
@@ -750,7 +870,15 @@ export default function NyaySetuPreview() {
               </div>
               
               {msg.role === "ai" && (
-                <div className="flex items-center gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity px-1">
+                <div className="flex items-center gap-1 mt-1 opacity-80 sm:opacity-0 group-hover:opacity-100 transition-opacity px-1">
+                  <button 
+                    onClick={() => handleSpeak(msg.content, index)} 
+                    className="p-1.5 rounded transition-colors text-xs flex items-center gap-1 hover:bg-black/5 dark:hover:bg-white/10" 
+                    style={{ color: speakingIndex === index ? palette.accent : palette.subtext }}
+                    title={speakingIndex === index ? (t.stopListen || "Stop Audio") : (t.listen || "Listen to Answer")}
+                  >
+                    {speakingIndex === index ? <VolumeX size={14} className="text-amber-500 animate-pulse" /> : <Volume2 size={14} />}
+                  </button>
                   <button onClick={() => handleCopy(msg.content, index)} className="p-1.5 rounded transition-colors text-xs flex items-center gap-1 hover:bg-black/5 dark:hover:bg-white/10" style={{ color: palette.subtext }}>
                     {copiedIndex === index ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
                   </button>
@@ -782,15 +910,31 @@ export default function NyaySetuPreview() {
               )}
 
               {msg.role === "ai" && !msg.content.includes("🚨") && (
-                <button
-                  onClick={() => handleGenerateNotice(msg.content)}
-                  disabled={isGenerating}
-                  className="mt-3 flex items-center w-fit gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
-                  style={{ background: palette.accent, color: palette.accentText }}
-                >
-                  <FileText size={16} />
-                  {isGenerating ? "Drafting Notice (AI is thinking)..." : t.generateNotice}
-                </button>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={() => handleGenerateNotice(msg.content)}
+                    disabled={isGenerating}
+                    className="flex items-center w-fit gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-[1.02]"
+                    style={{ background: palette.accent, color: palette.accentText }}
+                  >
+                    <FileText size={15} />
+                    {isGenerating ? "Drafting Notice..." : (t.generateNotice || "Generate Legal Notice")}
+                  </button>
+                  
+                  <button
+                    onClick={() => handleGenerateFIR(msg.content)}
+                    disabled={isGeneratingFIR}
+                    className="flex items-center w-fit gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-[1.02] border"
+                    style={{ 
+                      background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)', 
+                      color: palette.heading, 
+                      borderColor: palette.pillBorder 
+                    }}
+                  >
+                    <ShieldAlert size={15} className="text-red-500" />
+                    {isGeneratingFIR ? "Drafting Complaint..." : (t.draftFIR || "Draft Police FIR (BNSS)")}
+                  </button>
+                </div>
               )}
               </div>
             </div>
@@ -840,6 +984,20 @@ export default function NyaySetuPreview() {
                 onKeyDown={(e) => e.key === "Enter" && sendMessage()}
               />
               
+              <button
+                type="button"
+                onClick={handleVoiceInput}
+                className={`p-2 sm:p-2.5 rounded-full transition-all flex items-center justify-center ${
+                  isListening 
+                    ? "bg-red-500 text-white animate-pulse shadow-lg scale-105" 
+                    : "hover:bg-black/5 dark:hover:bg-white/10 opacity-70 hover:opacity-100"
+                }`}
+                style={{ color: isListening ? '#ffffff' : palette.subtext }}
+                title={isListening ? (t.listening || "Listening...") : (t.voiceInput || "Click to speak (Voice Typing)")}
+              >
+                {isListening ? <MicOff size={17} /> : <Mic size={17} />}
+              </button>
+
               <button
                 onClick={sendMessage}
                 disabled={isLoading}
