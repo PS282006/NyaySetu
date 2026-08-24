@@ -10,7 +10,8 @@ interface HistoryItem {
 
 
 import { useState, useEffect } from "react";
-import { GoogleAuth } from "@codetrix-studio/capacitor-google-auth";
+import { Browser } from "@capacitor/browser";
+import { App } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 import { GoogleLogin, useGoogleLogin } from "@react-oauth/google";
 import { History, X, Trash2, Plus, LogOut, Globe, ChevronDown, Sun, Moon, FileText, Scale, Volume2, VolumeX, ShieldAlert, Send, User, Copy, Check, ThumbsUp, Home, Shield, Briefcase } from "lucide-react";
@@ -163,49 +164,22 @@ function GoogleSignInButton({
   const handleGoogleLogin = async () => {
     try {
       setIsConnecting(true);
-
-      // 1. Native Android Google Play Services (Pops up native Google Account Picker on phone!)
-      if (typeof window !== "undefined" && Capacitor.isNativePlatform()) {
-        try {
-          GoogleAuth.initialize({
-            clientId: "611241590650-in5gn85q6nmn1g7kctd6vp08udgume1b.apps.googleusercontent.com",
-            scopes: ["profile", "email"],
-            grantOfflineAccess: true,
-          });
-          const googleUser = await GoogleAuth.signIn();
-          const tokenToSend = googleUser.authentication?.idToken || googleUser.authentication?.accessToken;
-          if (tokenToSend) {
-            const res = await fetch("https://nyaysetu-1qbc.onrender.com/api/auth/google", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ token: tokenToSend })
-            });
-            if (res.ok) {
-              const data = await res.json();
-              onSuccessAuth(data.access_token);
-              setIsConnecting(false);
-              return;
-            }
-          }
-        } catch (nativeErr: any) {
-          console.log("Native Google Sign-In note:", nativeErr);
-          // If explicitly cancelled by user, stop
-          if (nativeErr?.message?.includes("cancel") || nativeErr?.message?.includes("12501")) {
-            setIsConnecting(false);
-            return;
-          }
-        }
-      }
-
-      // 2. Direct OAuth with prompt=select_account (Displays list of phone/browser Google accounts!)
       const clientId = "611241590650-in5gn85q6nmn1g7kctd6vp08udgume1b.apps.googleusercontent.com";
       const redirectUri = "https://nyay-setu-omega.vercel.app";
       const scope = "openid email profile";
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(scope)}&prompt=select_account`;
-      window.location.href = authUrl;
+
+      if (typeof window !== "undefined" && (window as any).Capacitor?.isNativePlatform?.()) {
+        await Browser.open({ url: authUrl, presentationStyle: 'popover' });
+        Browser.addListener('browserFinished', () => {
+          setIsConnecting(false);
+        });
+      } else {
+        window.location.href = authUrl;
+      }
     } catch (e) {
       setIsConnecting(false);
-      alert("Unable to open Google Sign-In.");
+      window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=611241590650-in5gn85q6nmn1g7kctd6vp08udgume1b.apps.googleusercontent.com&redirect_uri=https://nyay-setu-omega.vercel.app&response_type=token&scope=openid%20email%20profile&prompt=select_account`;
     }
   };
 
@@ -253,6 +227,37 @@ export default function NyaySetuPreview() {
   const [password, setPassword] = useState("");
   
   useEffect(() => {
+    // Listen for deep link / custom URL open from Chrome Custom Tab
+    if (typeof window !== "undefined" && (window as any).Capacitor?.isNativePlatform?.()) {
+      App.addListener('appUrlOpen', async (data: any) => {
+        try {
+          await Browser.close();
+        } catch (_) {}
+        if (data.url && data.url.includes("access_token=")) {
+          const hashPart = data.url.split("#")[1] || data.url.split("?")[1] || "";
+          const params = new URLSearchParams(hashPart);
+          const accessToken = params.get("access_token");
+          if (accessToken) {
+            fetch("https://nyaysetu-1qbc.onrender.com/api/auth/google", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ token: accessToken })
+            })
+            .then(res => res.json())
+            .then(d => {
+              if (d.access_token) {
+                localStorage.setItem("nyaysetu_token", d.access_token);
+                setToken(d.access_token);
+                loadHistory(d.access_token);
+              }
+            })
+            .catch(err => console.error("Google Auth error:", err));
+          }
+        }
+      });
+    }
+
+    // Check for token in URL Hash (for Web or direct browser redirects)
     if (typeof window !== "undefined" && window.location.hash) {
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const accessToken = hashParams.get("access_token");
