@@ -1,7 +1,16 @@
+interface HistoryItem {
+  id: number;
+  query: string;
+  reply: string;
+  citations?: string[];
+  confidence_score?: number;
+  created_at?: string;
+}
+
 "use client";
 import { useState, useEffect } from "react";
 import { GoogleLogin } from "@react-oauth/google";
-import { Plus, LogOut, Globe, ChevronDown, Sun, Moon, FileText, Scale, Mic, Send, User, Copy, Check, ThumbsUp, Home, Shield, Briefcase } from "lucide-react";
+import { History, X, Trash2, Plus, LogOut, Globe, ChevronDown, Sun, Moon, FileText, Scale, Mic, Send, User, Copy, Check, ThumbsUp, Home, Shield, Briefcase } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
 declare global {
@@ -15,6 +24,10 @@ const TRANSLATIONS: any = {
   en: {
     tagline: "YOUR AI LEGAL ASSISTANT",
     newChat: "New Chat",
+    history: "History",
+    recentChats: "Past Consultations",
+    noHistory: "No past consultations yet.",
+    clearAll: "Clear All",
     placeholder: "E.g., My landlord won't return my deposit...",
     send: "Send",
     generateNotice: "Generate Legal Notice",
@@ -125,6 +138,8 @@ export default function NyaySetuPreview() {
   // Trigger re-render translation
 
   const [input, setInput] = useState("");
+  const [historyList, setHistoryList] = useState<HistoryItem[]>([]);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [messages, setMessages] = useState<{role: string, content: string, citations?: string[], confidence_score?: number}[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -151,15 +166,40 @@ export default function NyaySetuPreview() {
         headers: { "Authorization": `Bearer ${t}` }
       });
       if (res.ok) {
-        const hist = await res.json();
-        const formatted: {role: string, content: string, citations?: string[], confidence_score?: number}[] = [];
-        (hist as any[]).reverse().forEach((log: any) => {
-          formatted.push({ role: "user", content: log.query });
-          formatted.push({ role: "ai", content: log.reply, citations: log.citations, confidence_score: log.confidence_score });
-        });
-        setMessages(formatted);
+        const hist: HistoryItem[] = await res.json();
+        setHistoryList(hist);
+        if (hist.length > 0) {
+          const latest = hist[0];
+          setMessages([
+            { role: "user", content: latest.query },
+            { role: "ai", content: latest.reply, citations: latest.citations, confidence_score: latest.confidence_score }
+          ]);
+        }
       }
     } catch(e) {}
+  };
+
+  const handleSelectHistory = (item: HistoryItem) => {
+    setMessages([
+      { role: "user", content: item.query },
+      { role: "ai", content: item.reply, citations: item.citations, confidence_score: item.confidence_score }
+    ]);
+    setIsHistoryOpen(false);
+  };
+
+  const handleClearHistory = async () => {
+    if (!window.confirm("Are you sure you want to clear all consultation history?")) return;
+    setMessages([]);
+    setHistoryList([]);
+    setIsHistoryOpen(false);
+    try {
+      if (token) {
+        await fetch("https://nyaysetu-1qbc.onrender.com/api/history", {
+          method: "DELETE",
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+      }
+    } catch (e) {}
   };
 
   const handleAuth = async (e: any) => {
@@ -185,6 +225,7 @@ export default function NyaySetuPreview() {
 
   const handleNewChat = () => {
     setMessages([]);
+    setIsHistoryOpen(false);
   };
 
   const handleLogout = () => {
@@ -532,6 +573,18 @@ export default function NyaySetuPreview() {
 
           <div className="flex items-center gap-1 sm:gap-2">
             <button 
+              onClick={() => setIsHistoryOpen(true)}
+              className="flex items-center justify-center w-7 h-7 sm:w-auto sm:h-auto gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border text-[10px] sm:text-xs font-semibold notranslate transition-opacity hover:opacity-80 relative"
+              style={{ borderColor: palette.pillBorder, color: palette.heading, background: palette.pillBg }}
+              title="View Consultation History"
+            >
+              <History size={13} />
+              <span className="hidden sm:inline">{t.history || "History"}</span>
+              {historyList.length > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-amber-500 sm:hidden"></span>
+              )}
+            </button>
+            <button 
               onClick={handleNewChat}
               className="flex items-center justify-center w-7 h-7 sm:w-auto sm:h-auto gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border text-[10px] sm:text-xs font-semibold notranslate transition-opacity hover:opacity-80"
               style={{ borderColor: palette.pillBorder, color: palette.heading, background: palette.pillBg }}
@@ -790,7 +843,103 @@ export default function NyaySetuPreview() {
           </div>
         </div>
       </div>
-    </div>
-  );
-}
+    
+      {/* Slide-out History Drawer (ChatGPT / Gemini style) */}
+      {isHistoryOpen && (
+        <div className="fixed inset-0 z-50 flex animate-in fade-in duration-200">
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setIsHistoryOpen(false)}
+          ></div>
 
+          {/* Drawer Panel */}
+          <div 
+            className="relative w-full max-w-[85vw] sm:max-w-sm h-full flex flex-col p-4 sm:p-5 z-10 shadow-2xl animate-in slide-in-from-left duration-300"
+            style={{ 
+              background: isDark ? 'rgba(22, 12, 16, 0.96)' : 'rgba(255, 255, 255, 0.96)',
+              backdropFilter: 'blur(24px)',
+              borderRight: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`
+            }}
+          >
+            {/* Drawer Header */}
+            <div className="flex items-center justify-between pb-3.5 border-b notranslate" style={{ borderColor: palette.border }}>
+              <div className="flex items-center gap-2">
+                <History size={18} style={{ color: palette.heading }} />
+                <h3 className="font-bold text-sm" style={{ color: palette.heading }}>{t.recentChats || "Past Consultations"}</h3>
+              </div>
+              <button 
+                onClick={() => setIsHistoryOpen(false)}
+                className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                style={{ color: palette.subtext }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* New Consultation Button inside Drawer */}
+            <button
+              onClick={handleNewChat}
+              className="mt-4 flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl border font-semibold text-xs transition-all hover:scale-[1.01] shadow-sm notranslate"
+              style={{ background: palette.pillBg, borderColor: palette.pillBorder, color: palette.heading }}
+            >
+              <Plus size={14} />
+              {t.newChat || "New Consultation"}
+            </button>
+
+            {/* Past Conversations List */}
+            <div className="flex-1 overflow-y-auto mt-4 space-y-2 pr-1">
+              {historyList.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-48 text-center p-4 opacity-60 text-xs" style={{ color: palette.subtext }}>
+                  <Scale size={28} className="mb-2 opacity-50" />
+                  <p>{t.noHistory || "No previous legal consultations found."}</p>
+                </div>
+              ) : (
+                historyList.map((item, idx) => (
+                  <div
+                    key={item.id || idx}
+                    onClick={() => handleSelectHistory(item)}
+                    className="p-3 rounded-xl border transition-all cursor-pointer hover:scale-[1.01] group text-left relative"
+                    style={{
+                      background: palette.cardBg,
+                      borderColor: palette.border
+                    }}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] font-medium opacity-60" style={{ color: palette.subtext }}>
+                        {item.created_at || "Past query"}
+                      </span>
+                      {item.confidence_score ? (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-green-600 text-white">
+                          {item.confidence_score}%
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="text-xs font-semibold line-clamp-1 group-hover:underline" style={{ color: palette.heading }}>
+                      {item.query}
+                    </p>
+                    <p className="text-[11px] opacity-70 line-clamp-2 mt-0.5 leading-snug" style={{ color: palette.subtext }}>
+                      {item.reply}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Drawer Footer (Clear All) */}
+            {historyList.length > 0 && (
+              <div className="pt-3 border-t mt-auto notranslate" style={{ borderColor: palette.border }}>
+                <button
+                  onClick={handleClearHistory}
+                  className="flex items-center justify-center gap-1.5 w-full py-2 rounded-lg text-xs font-semibold text-red-500 hover:bg-red-500/10 transition-colors"
+                >
+                  <Trash2 size={13} />
+                  {t.clearAll || "Clear All History"}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+    </div>

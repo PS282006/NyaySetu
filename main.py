@@ -323,10 +323,12 @@ def get_history(current_user: User = Depends(get_current_user), db: Session = De
             except:
                 pass
         res.append({
+            "id": log.id,
             "query": log.query,
             "reply": log.response,
             "citations": cits,
-            "confidence_score": log.confidence_score
+            "confidence_score": log.confidence_score,
+            "created_at": log.created_at.strftime("%b %d, %H:%M") if log.created_at else "Recent"
         })
     return res
 
