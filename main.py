@@ -57,9 +57,11 @@ llm = ChatGroq(model="openai/gpt-oss-20b", temperature=0.1)
 
 chat_prompt = ChatPromptTemplate.from_template("""
 You are NyaySetu, an AI legal assistant providing plain-language legal information under Indian Law.
-Answer the user's question using ONLY the provided context. If the context does not contain enough information, state that clearly.
+Answer the user's question using the provided context. If the context does not fully cover the issue, use your general knowledge of Indian Law to give a helpful, educational answer.
 
-CRITICAL RULE: If the context includes a "Computational Result" from Wolfram_Alpha_Engine, YOU MUST STATE THAT EXACT NUMBER AS THE FINAL CALCULATION. DO NOT attempt to perform any additional math, division, or alterations on the Wolfram result.
+CRITICAL RULES:
+1. You MUST answer the user in the language specified: {language}. For example, if it says 'hi', reply in pure Hindi. If 'mr', reply in pure Marathi. If the user's question is written in Hinglish (Hindi in English letters), you should also reply in Hinglish!
+2. If the context includes a "Computational Result" from Wolfram_Alpha_Engine, YOU MUST STATE THAT EXACT NUMBER AS THE FINAL CALCULATION.
 
 Context:
 {context}
@@ -75,6 +77,7 @@ rag_chain = chat_prompt | llm
 class NyaySetuRequest(BaseModel):
     message: str = None
     query: str = None
+    language: str = "en"
 
 class NyaySetuNoticeRequest(BaseModel):
     issue_description: str
@@ -115,8 +118,12 @@ def get_wolfram_answer(query: str):
 async def chat_endpoint(req: NyaySetuRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     user_text = req.message if req.message else req.query
     
-    # 1. Fetch Legal Law Context (ChromaDB) with scores
-    results = vectorstore.similarity_search_with_score(user_text, k=3)
+    # 0. Translate Query to English for better Vector Search if it's Hinglish/Hindi/Marathi
+    translation_prompt = f"Translate the following legal query to standard English. If it is already in English, just repeat it. Output ONLY the English translation and nothing else. Query: {user_text}"
+    english_query = llm.invoke(translation_prompt).content.strip()
+    
+    # 1. Fetch Legal Law Context (ChromaDB) with scores using the English query
+    results = vectorstore.similarity_search_with_score(english_query, k=3)
     
     context_text = ""
     citations = []
@@ -151,7 +158,7 @@ async def chat_endpoint(req: NyaySetuRequest, current_user: User = Depends(get_c
             citations.append("Wolfram_Alpha_Engine")
         
     # 3. Generate the final answer using BOTH law and math
-    response = rag_chain.invoke({"context": context_text, "question": user_text})
+    response = rag_chain.invoke({"context": context_text, "question": user_text, "language": req.language})
     
     
     # Save Chat to History
