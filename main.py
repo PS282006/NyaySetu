@@ -130,7 +130,7 @@ def get_wolfram_answer(query: str):
 # 5. WEB UI ENDPOINTS
 # ==========================================
 @app.post("/api/chat")
-async def chat_endpoint(req: NyaySetuRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def chat_endpoint(req: NyaySetuRequest, current_user: Optional[User] = Depends(get_current_user), db: Session = Depends(get_db)):
     user_text = req.message if req.message else req.query
     
     # 0. Translate Query to English for better Vector Search if it's Hinglish/Hindi/Marathi
