@@ -249,6 +249,13 @@ export default function NyaySetuPreview() {
       let data: any = null;
       try { data = JSON.parse(rawText); } catch { data = { reply: rawText }; }
 
+      if (response.status === 401) {
+        localStorage.removeItem("token");
+        setToken("");
+        setMessages([]);
+        return;
+      }
+      
       if (!response.ok) {
         setMessages([...newMessages, { 
           role: "ai", 
