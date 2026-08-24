@@ -415,10 +415,10 @@ export default function NyaySetuPreview() {
   };
 
     const getActionType = (msg: any): "civil" | "criminal" | "none" => {
-    if (!msg || !msg.content || msg.content.includes("🚨")) return "none";
+    if (!msg || !msg.content || msg.content.includes("🚨") || !msg.citations || msg.citations.length === 0) return "none";
     const text = (msg.content + " " + (msg.citations || []).join(" ")).toLowerCase();
     
-    if (text.length < 50 && (text.includes("hello") || text.includes("how can i help") || text.includes("welcome"))) {
+    if (text.length < 50 && (text.includes("hello") || text.includes("how can i help") || text.includes("welcome") || text.includes("nyaysetu"))) {
       return "none";
     }
 
@@ -448,14 +448,10 @@ export default function NyaySetuPreview() {
       return "criminal";
     }
 
-    if (msg.citations && msg.citations.length > 0) {
-      if (msg.citations.some((c: string) => c.toLowerCase().includes("nyaya_sanhita"))) {
-        return "criminal";
-      }
-      return "civil";
+    if (msg.citations.some((c: string) => c.toLowerCase().includes("nyaya_sanhita"))) {
+      return "criminal";
     }
-
-    return "none";
+    return "civil";
   };
 
 const handleGenerateNotice = async (text: string) => {

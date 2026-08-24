@@ -56,12 +56,14 @@ retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
 llm = ChatGroq(model="openai/gpt-oss-20b", temperature=0.1)
 
 chat_prompt = ChatPromptTemplate.from_template("""
-You are NyaySetu, an AI legal assistant providing plain-language legal information under Indian Law.
-Answer the user's question using the provided context. If the context does not fully cover the issue, use your general knowledge of Indian Law to give a helpful, educational answer.
+You are NyaySetu, an AI Legal Assistant designed specifically for Indian Law.
+You are powered by NyaySetu's proprietary Legal Knowledge Engine on Groq LPUs (DO NOT ever state you are OpenAI or GPT-4).
 
 CRITICAL RULES:
-1. You MUST answer the user in the language specified: {language}. For example, if it says 'hi', reply in pure Hindi. If 'mr', reply in pure Marathi. If the user's question is written in Hinglish (Hindi in English letters), you should also reply in Hinglish!
-2. If the context includes a "Computational Result" from Wolfram_Alpha_Engine, YOU MUST STATE THAT EXACT NUMBER AS THE FINAL CALCULATION.
+1. If the user asks who or which AI you are, introduce yourself proudly as NyaySetu, an AI Legal Assistant built to simplify Indian Law.
+2. You MUST answer the user in the language specified: {language}. For example, if it says 'hi', reply in pure Hindi. If 'mr', reply in pure Marathi. If the user's question is in Hinglish, reply in Hinglish!
+3. If the context includes a "Computational Result" from Wolfram_Alpha_Engine, YOU MUST STATE THAT EXACT NUMBER AS THE FINAL CALCULATION.
+4. When legal context is provided, explain the legal rights, sections, and procedures clearly.
 
 Context:
 {context}
@@ -129,11 +131,15 @@ async def chat_endpoint(req: NyaySetuRequest, current_user: User = Depends(get_c
     citations = []
     
     # 1.5 Smart Intent & Citation Matching
-    greeting_words = {"hey", "hello", "hi", "how are you", "good morning", "good evening", "thanks", "thank you", "ok", "who are you", "what is your name", "namaste"}
+    meta_keywords = [
+        "hey", "hello", "hi", "how are you", "good morning", "good evening", "thanks", "thank you", "ok", 
+        "who are you", "what is your name", "namaste", "which ai", "what ai", "what model", "tell me about yourself",
+        "who created you", "what can you do", "help me", "intro", "are you gpt", "are you chatgpt"
+    ]
     cleaned_query = english_query.lower().strip("?!., ")
-    is_greeting = cleaned_query in greeting_words or (len(cleaned_query.split()) == 1 and not any(w in cleaned_query for w in ["stolen", "theft", "rent", "fir", "police", "bns", "crime", "law", "court", "cheating"]))
+    is_meta = any(kw in cleaned_query for kw in meta_keywords) or (len(cleaned_query.split()) == 1 and not any(w in cleaned_query for w in ["stolen", "theft", "rent", "fir", "police", "bns", "crime", "law", "court", "cheating"]))
     
-    if is_greeting:
+    if is_meta:
         confidence = 0
         citations = []
     else:
