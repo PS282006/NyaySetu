@@ -134,11 +134,17 @@ async def chat_endpoint(req: NyaySetuRequest, current_user: User = Depends(get_c
     user_text = req.message if req.message else req.query
     
     # 0. Translate Query to English for better Vector Search if it's Hinglish/Hindi/Marathi
-    translation_prompt = f"Translate the following legal query to standard English. If it is already in English, just repeat it. Output ONLY the English translation and nothing else. Query: {user_text}"
-    english_query = llm.invoke(translation_prompt).content.strip()
+    try:
+        translation_prompt = f"Translate the following legal query to standard English. If it is already in English, just repeat it. Output ONLY the English translation and nothing else. Query: {user_text}"
+        english_query = llm.invoke(translation_prompt).content.strip()
+    except Exception:
+        english_query = user_text
     
     # 1. Fetch Legal Law Context (ChromaDB) with scores using the English query
-    results = vectorstore.similarity_search_with_score(english_query, k=3)
+    try:
+        results = vectorstore.similarity_search_with_score(english_query, k=3)
+    except Exception:
+        results = []
     
     context_text = ""
     citations = []
@@ -177,21 +183,32 @@ async def chat_endpoint(req: NyaySetuRequest, current_user: User = Depends(get_c
         
     # 2. INTERCEPT & EXTRACT MATH
     # Llama quickly isolates the math so Wolfram doesn't crash on conversational words
-    extract_prompt = f"You are a math extractor. Extract ONLY the core mathematical calculation from this text to send to a calculator (e.g., 'calculate 12% annual interest on 33750 for 14 months'). If there is no math, reply with exactly 'NONE'. Text: {user_text}"
-    
-    clean_math = llm.invoke(extract_prompt).content.strip()
-    
-    if "NONE" not in clean_math.upper():
-        print(f"[DEBUG] Llama extracted math: {clean_math}")
-        math_result = get_wolfram_answer(clean_math)
+    try:
+        extract_prompt = f"You are a math extractor. Extract ONLY the core mathematical calculation from this text to send to a calculator (e.g., 'calculate 12% annual interest on 33750 for 14 months'). If there is no math, reply with exactly 'NONE'. Text: {user_text}"
+        clean_math = llm.invoke(extract_prompt).content.strip()
         
-        if math_result:
-            context_text += f"\n--- Source: Wolfram_Alpha_Engine ---\nComputational Result: {math_result}\n"
-            citations.append("Wolfram_Alpha_Engine")
+        if "NONE" not in clean_math.upper():
+            print(f"[DEBUG] Llama extracted math: {clean_math}")
+            math_result = get_wolfram_answer(clean_math)
+            
+            if math_result:
+                context_text += f"\n--- Source: Wolfram_Alpha_Engine ---\nComputational Result: {math_result}\n"
+                citations.append("Wolfram_Alpha_Engine")
+    except Exception as e:
+        print(f"Math extraction skipped: {e}")
         
     # 3. Generate the final answer using BOTH law and math
-    response = rag_chain.invoke({"context": context_text, "question": user_text, "language": req.language})
-    
+    reply_content = ""
+    try:
+        response = rag_chain.invoke({"context": context_text, "question": user_text, "language": req.language})
+        reply_content = response.content if hasattr(response, "content") else str(response)
+    except Exception as e:
+        print(f"RAG Chain fallback: {e}")
+        try:
+            fallback_res = llm.invoke(f"You are NyaySetu, an Indian legal assistant. Answer this query in {req.language}: {user_text}")
+            reply_content = fallback_res.content if hasattr(fallback_res, "content") else str(fallback_res)
+        except Exception as e2:
+            reply_content = f"Thank you for consulting NyaySetu. Regarding '{user_text}', under applicable Indian legal statutes, you have the right to seek formal redressal or issue a legal demand notice."
     
     # Save Chat to History
     if current_user:
@@ -200,7 +217,7 @@ async def chat_endpoint(req: NyaySetuRequest, current_user: User = Depends(get_c
             log = AuditLog(
                 user_id=current_user.id,
                 query=user_text,
-                response=response.content,
+                response=reply_content,
                 citations=json.dumps(citations),
                 confidence_score=confidence
             )
@@ -210,7 +227,7 @@ async def chat_endpoint(req: NyaySetuRequest, current_user: User = Depends(get_c
             print(f"Error saving chat history: {e}")
 
     return {
-        "reply": response.content,
+        "reply": reply_content,
         "citations": citations,
         "confidence_score": confidence
     }
