@@ -128,13 +128,19 @@ async def chat_endpoint(req: NyaySetuRequest, current_user: User = Depends(get_c
     context_text = ""
     citations = []
     
-    # Calculate confidence based on the best match distance (0 = perfect, 1+ = poor)
+    # 1.5 Filter out irrelevant conversational queries (distance > 0.68)
     best_score = results[0][1] if results else 1.0
-    confidence = max(0, min(100, int((1.0 - best_score + 0.45) * 100)))
+    
+    # If the best match is worse than 0.68, it's not a legal query (e.g. "hey", "hello")
+    if best_score > 0.68:
+        confidence = 0
+    else:
+        # Scale 0.40 distance to ~95%, 0.65 distance to ~60%
+        confidence = max(55, min(99, int((0.75 - best_score) * 160)))
     
     for doc, score in results:
-        # Only include citations that are actually relevant (distance < 0.75)
-        if score < 0.75:
+        # Only include citations that are actually relevant (distance <= 0.68)
+        if score <= 0.68:
             source = doc.metadata.get("source", "Unknown")
             # Clean up the citation name to just the filename without the path
             if "/" in source:
