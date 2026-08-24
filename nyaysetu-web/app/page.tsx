@@ -677,7 +677,7 @@ export default function NyaySetuPreview() {
                 >
                   <div className="flex items-center gap-2 mb-1 notranslate">
                     <p className="font-semibold not-italic">{t.citedAuthorities}</p>
-                    {msg.confidence_score && msg.confidence_score > 0 ? (
+                    {msg.confidence_score ? (
                       <span className="not-italic bg-green-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center shadow-sm">
                         Match Confidence: {msg.confidence_score}%
                       </span>
