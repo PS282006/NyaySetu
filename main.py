@@ -115,17 +115,26 @@ def get_wolfram_answer(query: str):
 async def chat_endpoint(req: NyaySetuRequest):
     user_text = req.message if req.message else req.query
     
-    # 1. Fetch Legal Law Context (ChromaDB)
-    docs = retriever.invoke(user_text)
+    # 1. Fetch Legal Law Context (ChromaDB) with scores
+    results = vectorstore.similarity_search_with_score(user_text, k=3)
     
     context_text = ""
     citations = []
     
-    for doc in docs:
-        source = doc.metadata.get("source", "Unknown")
-        if source not in citations:
-            citations.append(source)
-        context_text += f"\n--- Source: {source} ---\n{doc.page_content}\n"
+    # Calculate confidence based on the best match distance (0 = perfect, 1+ = poor)
+    best_score = results[0][1] if results else 1.0
+    confidence = max(0, min(100, int((1.0 - best_score + 0.45) * 100)))
+    
+    for doc, score in results:
+        # Only include citations that are actually relevant (distance < 0.75)
+        if score < 0.75:
+            source = doc.metadata.get("source", "Unknown")
+            # Clean up the citation name to just the filename without the path
+            if "/" in source:
+                source = source.split("/")[-1]
+            if source not in citations:
+                citations.append(source)
+            context_text += f"\n--- Source: {source} ---\n{doc.page_content}\n"
         
     # 2. INTERCEPT & EXTRACT MATH
     # Llama quickly isolates the math so Wolfram doesn't crash on conversational words
@@ -146,7 +155,8 @@ async def chat_endpoint(req: NyaySetuRequest):
     
     return {
         "reply": response.content,
-        "citations": citations
+        "citations": citations,
+        "confidence_score": f"{confidence}%"
     }
 
 @app.post("/api/generate-notice")
