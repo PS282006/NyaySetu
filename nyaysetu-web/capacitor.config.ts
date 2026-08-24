@@ -4,10 +4,10 @@ const config: CapacitorConfig = {
   appId: 'com.nyaysetu.app',
   appName: 'NyaySetu',
   webDir: 'out',
-  plugins: {
-    CapacitorHttp: {
-      enabled: true
-    }
+  server: {
+    url: 'https://nyay-setu-omega.vercel.app',
+    cleartext: true,
+    allowNavigation: ['*']
   },
   android: {
     allowMixedContent: true,
