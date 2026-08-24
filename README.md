@@ -1,170 +1,117 @@
-# ⚖️ NyaySetu (न्यायसेतु) — Autonomous AI Legal Aid & Document Generation Platform
+# ⚖️ NyaySetu (न्यायसेतु) — AI Legal Aid & Document Drafting Assistant
 
 <div align="center">
 
 [![Live Web App](https://img.shields.io/badge/Live_Web_App-nyay--setu--omega.vercel.app-0070F3?style=for-the-badge&logo=vercel&logoColor=white)](https://nyay-setu-omega.vercel.app)
-[![Download Android APK](https://img.shields.io/badge/Download_APK-NyaySetu.apk-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/PS282006/NyaySetu/raw/main/apk/NyaySetu.apk)
+[![Download Android APK](https://img.shields.io/badge/Download_Android_APK-NyaySetu.apk-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/PS282006/NyaySetu/raw/main/apk/NyaySetu.apk)
 [![Backend API](https://img.shields.io/badge/API_Status-Online-46E3B7?style=for-the-badge&logo=fastapi&logoColor=white)](https://nyaysetu-1qbc.onrender.com)
 [![License](https://img.shields.io/badge/License-MIT-F7B93E?style=for-the-badge)](LICENSE)
 
-**Democratizing access to Indian Law through Real-Time Statutory Retrieval-Augmented Generation, Computational Restitution Engines, and Automated Legal Document Drafting.**
+**An intelligent legal assistant built to make Indian law simple, accessible, and actionable for every citizen.**
 
-[Live Application](https://nyay-setu-omega.vercel.app) • [Download Android APK](https://github.com/PS282006/NyaySetu/raw/main/apk/NyaySetu.apk) • [API Documentation](https://nyaysetu-1qbc.onrender.com/docs)
+[🌐 Open Web App](https://nyay-setu-omega.vercel.app) • [📱 Download Android App](https://github.com/PS282006/NyaySetu/raw/main/apk/NyaySetu.apk) • [📖 API Docs](https://nyaysetu-1qbc.onrender.com/docs)
 
 </div>
 
 ---
 
-## 📌 Problem Statement
+## 🌟 What is NyaySetu?
 
-In India, over **1.4 billion citizens** navigate one of the world's most intricate legal systems, with more than **50 million pending court cases**. Ordinary individuals face severe systemic barriers:
-* **Inaccessible Legal Jargon:** Statutory acts and procedural codes are intimidating and hard to decipher.
-* **Prohibitive Costs:** Quality preliminary legal advice and demand notices cost thousands of rupees.
-* **Procedural Delays:** Citizens lack immediate guidance on whether an issue warrants a civil notice or a criminal Police FIR under newly enacted codes (**Bharatiya Nyaya Sanhita 2023** and **Bharatiya Nagarik Suraksha Sanhita 2023**).
-* **Language & Literacy Barriers:** Legal aid is rarely accessible in regional Indian languages or voice-enabled formats.
+**NyaySetu (Bridge to Justice)** is an AI-powered legal assistant designed specifically for Indian citizens. It takes complex statutory legal acts, translates them into plain language, calculates exact compensation/interest amounts, and automatically drafts official, court-ready **Legal Demand Notices** and **Police FIR Complaints** in seconds.
+
+Whether you are dealing with an unpaid security deposit, workplace harassment, a defective consumer product, or filing an RTI, NyaySetu provides verified legal steps with statutory backing.
 
 ---
 
-## 💡 The Solution: NyaySetu
+## 🎯 Problems We Solve
 
-**NyaySetu (Bridge to Justice)** is an end-to-end autonomous AI legal aid platform that functions as a 24/7 intelligent paralegal for Indian citizens. It bridges the gap between raw legal statutes and practical civic action by providing instant statutory analysis, precise financial calculation, multilingual voice synthesis, and court-ready PDF generation.
+* **Complex Legal Language:** Simplifies dense legal sections into plain English, Hindi, and Marathi.
+* **Expensive Preliminary Consultation:** Gives citizens instant, free preliminary legal clarity before hiring a lawyer.
+* **New Criminal Codes Confusion:** Full support for the newly enacted **Bharatiya Nyaya Sanhita (BNS) 2023** and **Bharatiya Nagarik Suraksha Sanhita (BNSS) 2023**.
+* **Zero Math Hallucinations:** Calculates exact compound interest on withheld dues using computational engines.
 
 ---
 
-## 🌟 Key Features
+## ✨ Key Features
 
-### 1. 🏛️ Statutory RAG (Retrieval-Augmented Generation)
-* Semantically indexes core Indian Bare Acts including:
-  * **Bharatiya Nyaya Sanhita (BNS) 2023**
-  * **Bharatiya Nagarik Suraksha Sanhita (BNSS) 2023**
+### 🏛️ 1. Statutory Legal Knowledge Base (RAG)
+* Indexes major Indian Bare Acts:
+  * **Bharatiya Nyaya Sanhita (BNS) 2023** & **BNSS 2023**
   * **Right to Information (RTI) Act 2005**
   * **Consumer Protection Act 2019**
   * **Maharashtra Rent Control Act 1999 & Transfer of Property Act 1882**
-  * **Information Technology (IT) Act 2000**
-  * **POSH Act 2013** & **Payment of Wages Act 1936**
-* Provides **verifiable statutory citations** and real-time **Match Confidence %** badges on every response.
+  * **POSH Act 2013** & **IT Act 2000**
+* Displays **Cited Authorities** and verified **Match Confidence %** on every response.
 
-### 2. 🧮 Computational Financial Restitution Engine
-* Integrates **Wolfram Alpha API** alongside high-speed Groq LPUs.
-* Automatically extracts and computes compound interest on withheld security deposits, gratuity, severance pay, and statutory penalties with mathematical precision.
+### 🧮 2. Precise Financial Calculations (Wolfram Alpha)
+* Automatically detects financial queries (e.g., *“Calculate 12% interest on ₹50,000 security deposit for 14 months”*).
+* Uses the **Wolfram Alpha API** to calculate accurate statutory compensation and interest amounts.
 
-### 3. 📄 Automated Court-Ready Document Drafters
-* **Civil Legal Demand Notices:** Instantly drafts formal, downloadable PDF demand notices complete with statutory citations, factual chronology, and a standard 15-day compliance deadline.
-* **Criminal Police FIR Complaints:** Generates formal written complaints addressed to the Station House Officer (SHO) citing applicable sections under **BNSS 2023 Section 173/175** and **BNS 2023**.
+### 📄 3. 1-Click Court-Ready PDF Generation
+* **Civil Demand Notices:** Generates a formal PDF legal notice with a standard 15-day compliance deadline.
+* **Police FIR Complaints:** Generates an official written complaint addressed to the Station House Officer (SHO) under **Section 173/175 of the BNSS 2023**.
 
-### 4. 🌐 Multilingual & Voice-Enabled Accessibility
-* Full cross-lingual support for **English, Hindi (हिंदी), and Marathi (मराठी)**.
-* Integrated Text-to-Speech (TTS) engine enabling 1-tap audio readouts for visually impaired or low-literacy users.
+### 🔊 4. Multilingual & Voice Enabled
+* Full support in **English, Hindi (हिंदी), and Marathi (मराठी)**.
+* Includes **Text-to-Speech (TTS)** audio readout for low-literacy or visually impaired users.
 
-### 5. 📱 Dual Platform: Web & Native Android App
-* Fully responsive web application deployed globally on Vercel.
-* Standalone native **Android APK** featuring 1-tap Google Authentication, offline caching, and native document sharing.
-
----
-
-## 🏗️ System Architecture
-
-```mermaid
-flowchart TD
-    User([User: Web or Android App]) -->|Query / Speech| UI[Next.js + Capacitor Mobile Client]
-    UI -->|REST API / HTTPS| Backend[FastAPI Backend Engine]
-    
-    subgraph "Knowledge & Intelligence Pipeline"
-        Backend -->|Translate / Normalize| LLM[Groq LPU Inference Engine]
-        Backend -->|Semantic Search| Chroma[ChromaDB Vector Store + FastEmbed]
-        Chroma -->|Statutory Context| LLM
-        Backend -->|Math / Financial Calculation| Wolfram[Wolfram Alpha Engine]
-        Wolfram -->|Exact Computation| LLM
-    end
-    
-    subgraph "Output & Document Generation"
-        LLM -->|Streamed Response + Citations| UI
-        Backend -->|Dynamic Templating| PDF[ReportLab PDF Engine]
-        PDF -->|Legal Demand Notice / Police FIR PDF| UI
-    end
-    
-    subgraph "Identity & Persistence"
-        Backend -->|Auth & Audit Trails| DB[(SQLite / PostgreSQL + SQLAlchemy)]
-    end
-```
+### 📱 5. Web & Native Android App
+* Fully responsive web application on Vercel.
+* Standalone **Android APK** featuring 1-tap Google Authentication and direct document download/sharing.
 
 ---
 
-## 🛠️ Technology Stack
+## 🛠️ Tech Stack
 
-| Component | Technologies Used |
+| Layer | Technology |
 |---|---|
-| **Frontend UI** | Next.js 15, React 19, TypeScript, Tailwind CSS, Lucide Icons |
-| **Mobile Runtime** | Capacitor 7 (Android SDK 36, Native Google Play Services Plugin) |
-| **Backend Framework** | FastAPI, Uvicorn, Pydantic v2 |
-| **LLM Inference** | Groq Cloud LPUs (`openai/gpt-oss-20b` with failover) |
-| **Embeddings & Vector Store** | FastEmbed (`BAAI/bge-small-en-v1.5`), ChromaDB |
-| **Computational Engine** | Wolfram Alpha Short Answers & Full REST API |
-| **PDF Generation** | ReportLab Document Engine (Custom Indian Legal Layouts) |
-| **Authentication & DB** | Google OAuth 2.0, JWT (HS256), SQLAlchemy ORM |
-| **Hosting & CI/CD** | Vercel (Frontend), Render (Backend API), GitHub Releases (APK) |
+| **Frontend** | Next.js 15, React 19, TypeScript, Tailwind CSS, Lucide Icons |
+| **Mobile App** | Capacitor 7 Native Android (SDK 36, Java 17) |
+| **Backend API** | FastAPI (Python 3.11+), Uvicorn |
+| **AI & LLM** | Groq Cloud LPUs (`openai/gpt-oss-20b` with failover) |
+| **Vector DB** | ChromaDB with FastEmbed (`BAAI/bge-small-en-v1.5`) |
+| **Math Engine** | Wolfram Alpha API |
+| **PDF Engine** | ReportLab Document Engine |
+| **Database** | SQLite + SQLAlchemy ORM (Auth & Audit Logs) |
 
 ---
 
-## 🚀 Quick Start & Local Setup
+## 🚀 Easy Local Setup
 
-### 1. Prerequisites
-* Python 3.10+
-* Node.js 18+
-* Git
-
-### 2. Backend Setup
+### 1. Backend Setup
 ```bash
-# Clone the repository
+# Clone repository
 git clone https://github.com/PS282006/NyaySetu.git
 cd NyaySetu
 
-# Create and activate virtual environment
+# Set up Python environment
 python3 -m venv venv
-source venv/bin/activate   # On Windows: venv\Scripts\activate
+source venv/bin/activate
 
-# Install dependencies
+# Install requirements & start backend
 pip install -r requirements.txt
-
-# Run the FastAPI server
 uvicorn main:app --reload --port 8000
 ```
-* Backend will be live at `http://localhost:8000`
-* Interactive API Documentation (Swagger): `http://localhost:8000/docs`
+Backend will run at `http://localhost:8000` (API Docs at `/docs`).
 
-### 3. Frontend Setup
+### 2. Frontend Setup
 ```bash
 cd nyaysetu-web
-
-# Install dependencies
 npm install
-
-# Run the Next.js development server
 npm run dev
 ```
-* Frontend will be live at `http://localhost:3000`
-
-### 4. Build Android APK
-```bash
-cd nyaysetu-web
-npm run build
-npx cap sync android
-cd android && ./gradlew assembleDebug
-```
-* Output binary generated at `android/app/build/outputs/apk/debug/app-debug.apk`
+Open `http://localhost:3000` in your browser.
 
 ---
 
-## 📱 Mobile App Download
-
-Get the official **NyaySetu Android App**:
+## 📱 Download Android APK
 
 * 📦 **Direct Download:** [`apk/NyaySetu.apk`](https://github.com/PS282006/NyaySetu/raw/main/apk/NyaySetu.apk)
 * 📱 **Package Name:** `com.nyaysetu.app`
-* ⚡ **Min Android Version:** Android 7.0 (Nougat) | **Target SDK:** 36 (Android 15)
+* ⚡ **Compatibility:** Android 7.0+ up to Android 15
 
 ---
 
 ## ⚖️ Disclaimer
 
-*NyaySetu is an artificial intelligence-assisted legal awareness and document generation platform. It provides preliminary legal guidance based on Indian statutory laws and does not constitute formal legal representation. Users are encouraged to consult a licensed advocate for court proceedings.*
+*NyaySetu is an AI-assisted legal empowerment tool created for educational and informational purposes. It provides statutory guidance and preliminary drafting assistance, but does not constitute formal attorney-client representation.*
