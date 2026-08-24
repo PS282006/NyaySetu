@@ -27,6 +27,11 @@ from datetime import datetime
 
 app = FastAPI(title="NyaySetu Legal API")
 
+@app.get("/")
+def health_check():
+    return {"status": "NyaySetu AI is alive and running!"}
+
+
 # ==========================================
 # 1. CORS CONFIGURATION (For Next.js UI)
 # ==========================================
