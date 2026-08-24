@@ -62,8 +62,8 @@ pass # GROQ_API_KEY is pulled automatically from Render Env Vars
 print("Loading local vector database & Groq AI...")
 embeddings = FastEmbedEmbeddings(model_name="BAAI/bge-small-en-v1.5", threads=1)
 vectorstore = Chroma(persist_directory="./chroma_db", embedding_function=embeddings)
-llm_primary = ChatGroq(model="groq/compound", temperature=0.1)
-llm_fallback = ChatGroq(model="groq/compound-mini", temperature=0.1)
+llm_primary = ChatGroq(model="openai/gpt-oss-20b", temperature=0.1)
+llm_fallback = ChatGroq(model="openai/gpt-oss-120b", temperature=0.1)
 llm = llm_primary.with_fallbacks([llm_fallback])
 
 chat_prompt = ChatPromptTemplate.from_template("""
@@ -194,19 +194,20 @@ async def chat_endpoint(req: NyaySetuRequest, current_user: User = Depends(get_c
     
     
     # Save Chat to History
-    try:
-        import json
-        log = AuditLog(
-            user_id=current_user.id,
-            query=user_text,
-            response=response.content,
-            citations=json.dumps(citations),
-            confidence_score=confidence
-        )
-        db.add(log)
-        db.commit()
-    except Exception as e:
-        print(f"Error saving chat history: {e}")
+    if current_user:
+        try:
+            import json
+            log = AuditLog(
+                user_id=current_user.id,
+                query=user_text,
+                response=response.content,
+                citations=json.dumps(citations),
+                confidence_score=confidence
+            )
+            db.add(log)
+            db.commit()
+        except Exception as e:
+            print(f"Error saving chat history: {e}")
 
     return {
         "reply": response.content,
