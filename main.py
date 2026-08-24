@@ -342,31 +342,43 @@ Rules:
 
 @app.post("/api/auth/google")
 def google_auth(token_data: GoogleToken, db: Session = Depends(get_db)):
+    email = None
+    client_id = "611241590650-in5gn85q6nmn1g7kctd6vp08udgume1b.apps.googleusercontent.com"
+    
+    # 1. Try verifying as Google id_token
     try:
-        # Verify the Google token
-        client_id = "611241590650-in5gn85q6nmn1g7kctd6vp08udgume1b.apps.googleusercontent.com"
         idinfo = id_token.verify_oauth2_token(token_data.token, google_requests.Request(), client_id)
-        
         email = idinfo.get("email")
-        if not email:
-            raise HTTPException(status_code=400, detail="Google token did not contain an email")
+    except Exception:
+        pass
+        
+    # 2. Try verifying as Google OAuth2 access_token via UserInfo API
+    if not email:
+        try:
+            resp = requests.get(
+                "https://www.googleapis.com/oauth2/v3/userinfo",
+                headers={"Authorization": f"Bearer {token_data.token}"},
+                timeout=5
+            )
+            if resp.status_code == 200:
+                email = resp.json().get("email")
+        except Exception:
+            pass
 
-        # Check if user exists
-        user = db.query(User).filter(User.email == email).first()
-        if not user:
-            # Create a new user with a dummy password since they use Google to login
-            hashed_pw = get_password_hash("GOOGLE_AUTH_DUMMY_PASSWORD_" + email)
-            user = User(email=email, hashed_password=hashed_pw)
-            db.add(user)
-            db.commit()
-            db.refresh(user)
-
-        # Generate our own JWT token for the session
-        access_token = create_access_token(data={"sub": str(user.id)})
-        return {"access_token": access_token, "token_type": "bearer"}
-    except ValueError:
-        # Invalid token
+    if not email:
         raise HTTPException(status_code=401, detail="Invalid Google authentication token")
+
+    # Check or create user
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        hashed_pw = get_password_hash("GOOGLE_AUTH_DUMMY_PASSWORD_" + email)
+        user = User(email=email, hashed_password=hashed_pw)
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+    access_token = create_access_token(data={"sub": str(user.id)})
+    return {"access_token": access_token, "token_type": "bearer"}
 
 
 

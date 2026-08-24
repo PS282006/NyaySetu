@@ -10,7 +10,7 @@ interface HistoryItem {
 
 
 import { useState, useEffect } from "react";
-import { GoogleLogin } from "@react-oauth/google";
+import { GoogleLogin, useGoogleLogin } from "@react-oauth/google";
 import { History, X, Trash2, Plus, LogOut, Globe, ChevronDown, Sun, Moon, FileText, Scale, Volume2, VolumeX, ShieldAlert, Send, User, Copy, Check, ThumbsUp, Home, Shield, Briefcase } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
@@ -144,6 +144,62 @@ function Logo({ size = 44 }: { size?: number }) {
       height={size}
       style={{ borderRadius: "50%", objectFit: "cover", display: "block" }}
     />
+  );
+}
+
+function GoogleSignInButton({ 
+  onSuccessAuth, 
+  palette, 
+  isDark 
+}: { 
+  onSuccessAuth: (token: string) => void; 
+  palette: any; 
+  isDark: boolean; 
+}) {
+  const login = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        const res = await fetch("https://nyaysetu-1qbc.onrender.com/api/auth/google", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: tokenResponse.access_token })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          onSuccessAuth(data.access_token);
+        } else {
+          alert("Google authentication failed on server.");
+        }
+      } catch (err) {
+        console.error("Google Auth error:", err);
+        alert("Unable to complete Google Sign-In.");
+      }
+    },
+    onError: (err) => {
+      console.error("Google Login Failed:", err);
+      alert("Google Sign-In was cancelled or failed.");
+    }
+  });
+
+  return (
+    <button
+      type="button"
+      onClick={() => login()}
+      className="w-full py-3.5 px-4 rounded-2xl border font-bold text-xs sm:text-sm tracking-wide shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center justify-center gap-3 backdrop-blur-md cursor-pointer"
+      style={{
+        background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.95)',
+        borderColor: palette.pillBorder,
+        color: palette.heading
+      }}
+    >
+      <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24">
+        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+      </svg>
+      <span>Continue with Google</span>
+    </button>
   );
 }
 
@@ -538,78 +594,58 @@ const handleGenerateNotice = async (text: string) => {
         <div className="absolute bottom-1/4 right-1/4 w-[35rem] h-[35rem] rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-screen opacity-30 pointer-events-none transition-all duration-1000" style={{ background: palette.heading }}></div>
 
         {/* The Glassmorphism Login Card */}
-        <form onSubmit={handleAuth} className="relative z-10 p-10 sm:p-12 rounded-[2.5rem] w-full max-w-[440px] flex flex-col gap-7 backdrop-blur-2xl animate-in fade-in slide-in-from-bottom-8 duration-1000" 
+        <form onSubmit={handleAuth} className="relative z-10 p-6 sm:p-10 rounded-3xl sm:rounded-[2.5rem] w-full max-w-[420px] flex flex-col gap-4 sm:gap-5 backdrop-blur-2xl animate-in fade-in slide-in-from-bottom-6 duration-700 shadow-2xl" 
               style={{ 
-                background: isDark ? 'rgba(20, 10, 12, 0.65)' : 'rgba(255, 255, 255, 0.7)', 
-                border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)'}`,
-                boxShadow: isDark ? '0 40px 80px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.1)' : '0 40px 80px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.6)'
+                background: isDark ? 'rgba(20, 10, 12, 0.75)' : 'rgba(255, 255, 255, 0.85)', 
+                border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)'}`,
+                boxShadow: isDark ? '0 30px 60px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.1)' : '0 30px 60px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.8)'
               }}>
           
-          <div className="flex justify-center mb-1 relative">
-            <div className="absolute inset-0 bg-white/20 dark:bg-white/5 blur-2xl rounded-full scale-150"></div>
-            <div className="relative transform hover:scale-105 transition-transform duration-500 shadow-2xl rounded-full">
-              <Logo size={72} />
+          <div className="flex justify-center mb-0 relative">
+            <div className="relative transform hover:scale-105 transition-transform duration-300 shadow-xl rounded-full">
+              <Logo size={64} />
             </div>
           </div>
           
           <div className="text-center">
-            <h2 className="text-3xl font-black tracking-tight mb-2 bg-clip-text text-transparent" 
-                style={{ backgroundImage: `linear-gradient(135deg, ${palette.heading}, ${palette.accent})` }}>
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-1" 
+                style={{ color: palette.heading }}>
               {t.welcome}
             </h2>
-            <p className="text-sm font-semibold opacity-70 tracking-wide" style={{ color: palette.subtext }}>{t.loginSub}</p>
+            <p className="text-xs sm:text-sm font-medium opacity-75 tracking-wide" style={{ color: palette.subtext }}>{t.loginSub}</p>
           </div>
           
-          {/* Official Google OAuth Button */}
-          <div className="flex justify-center w-full mt-1 transform hover:scale-[1.02] transition-transform duration-300">
-            <GoogleLogin
-              onSuccess={async (credentialResponse: any) => {
-                try {
-                  const res = await fetch("https://nyaysetu-1qbc.onrender.com/api/auth/google", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ token: credentialResponse.credential })
-                  });
-                  if (res.ok) {
-                    const data = await res.json();
-                    localStorage.setItem("nyaysetu_token", data.access_token);
-                    setToken(data.access_token);
-                    loadHistory(data.access_token);
-                  } else {
-                    alert("Google Login Failed on Server");
-                  }
-                } catch(e) {
-                  alert("Google Login Error");
-                }
+          {/* 100% Reliable Custom Branded Google OAuth Button */}
+          <div className="w-full mt-1">
+            <GoogleSignInButton
+              onSuccessAuth={(newToken) => {
+                localStorage.setItem("nyaysetu_token", newToken);
+                setToken(newToken);
+                loadHistory(newToken);
               }}
-              onError={() => alert("Google Login Failed")}
-              useOneTap
-              theme={isDark ? "filled_black" : "outline"}
-              size="large"
-              shape="pill"
-              text="continue_with"
-              width="340"
+              palette={palette}
+              isDark={isDark}
             />
           </div>
 
-          <div className="flex items-center gap-4 mt-2 mb-2">
+          <div className="flex items-center gap-3 my-1">
             <div className="flex-1 h-px" style={{ background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}></div>
             <span className="text-[10px] uppercase tracking-widest font-extrabold opacity-50" style={{ color: palette.subtext }}>{t.orUseEmail}</span>
             <div className="flex-1 h-px" style={{ background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}></div>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div className="relative group">
               <input 
                 type="email" 
                 placeholder={t.email} 
                 value={email} 
                 onChange={e=>setEmail(e.target.value)} 
-                className="w-full px-5 py-4 rounded-2xl border focus:outline-none focus:ring-2 transition-all shadow-inner backdrop-blur-sm placeholder:font-medium placeholder:opacity-60" 
+                className="w-full px-4 py-3.5 rounded-2xl border text-sm focus:outline-none focus:ring-2 transition-all shadow-inner backdrop-blur-sm placeholder:font-medium placeholder:opacity-50" 
                 style={{ 
-                  background: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.5)', 
+                  background: isDark ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.6)', 
                   color: palette.inputText, 
-                  borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                  borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
                   boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)'
                 }}
                 required
@@ -621,11 +657,11 @@ const handleGenerateNotice = async (text: string) => {
                 placeholder={t.password} 
                 value={password} 
                 onChange={e=>setPassword(e.target.value)} 
-                className="w-full px-5 py-4 rounded-2xl border focus:outline-none focus:ring-2 transition-all shadow-inner backdrop-blur-sm placeholder:font-medium placeholder:opacity-60" 
+                className="w-full px-4 py-3.5 rounded-2xl border text-sm focus:outline-none focus:ring-2 transition-all shadow-inner backdrop-blur-sm placeholder:font-medium placeholder:opacity-50" 
                 style={{ 
-                  background: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.5)', 
+                  background: isDark ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.6)', 
                   color: palette.inputText, 
-                  borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                  borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
                   boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)'
                 }}
                 required
@@ -635,10 +671,10 @@ const handleGenerateNotice = async (text: string) => {
 
           <button 
             type="submit" 
-            className="w-full py-4 mt-2 rounded-2xl text-white font-extrabold tracking-wide shadow-xl hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2" 
+            className="w-full py-3.5 mt-1 rounded-2xl text-white font-extrabold text-sm tracking-wide shadow-lg hover:shadow-xl hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer" 
             style={{ 
               background: `linear-gradient(135deg, ${palette.accent}, ${isDark ? '#5A151A' : '#D19C2A'})`,
-              boxShadow: `0 10px 25px -5px ${palette.accent}80`
+              boxShadow: `0 8px 20px -4px ${palette.accent}80`
             }}
           >
             {authMode === "login" ? t.loginBtn : "Create Account"}
@@ -647,14 +683,14 @@ const handleGenerateNotice = async (text: string) => {
           <button 
             type="button" 
             onClick={() => setAuthMode(m => m === "login" ? "register" : "login")} 
-            className="text-xs font-bold hover:underline opacity-70 hover:opacity-100 transition-opacity mx-auto"
+            className="text-xs font-bold hover:underline opacity-75 hover:opacity-100 transition-opacity mx-auto cursor-pointer"
             style={{ color: palette.heading }}
           >
             {authMode === "login" ? t.noAccount : "Already have an account? Log in"}
           </button>
         </form>
 
-        <div className="absolute bottom-8 flex gap-6 text-[10px] font-black tracking-[0.3em] opacity-30 animate-in fade-in duration-1000 delay-500" style={{ color: palette.heading }}>
+        <div className="absolute bottom-6 flex gap-6 text-[10px] font-black tracking-[0.3em] opacity-30 animate-in fade-in duration-1000 delay-500" style={{ color: palette.heading }}>
           <span>POSTGRESQL DB</span>
           <span>•</span>
           <span>END-TO-END ENCRYPTED</span>
