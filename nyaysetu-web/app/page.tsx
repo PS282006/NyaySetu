@@ -503,7 +503,7 @@ export default function NyaySetuPreview() {
         }}
       >
         <div
-          className="flex items-center justify-between p-5 border-b z-20 backdrop-blur-md"
+          className="flex items-center justify-between p-3 sm:p-5 border-b z-20 backdrop-blur-md"
           style={{ background: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.4)', borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }}
         >
           <div className="flex items-center gap-3 notranslate">
@@ -582,7 +582,7 @@ export default function NyaySetuPreview() {
           <div id="google_translate_element" style={{ display: 'none' }}></div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4">
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full mt-8 sm:mt-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
                <div className="w-16 h-16 rounded-2xl mb-6 shadow-sm flex items-center justify-center border" style={{ background: palette.cardBg, borderColor: palette.border }}>
@@ -634,7 +634,7 @@ export default function NyaySetuPreview() {
                 )}
               </div>
 
-              <div className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"} max-w-[85%]`}>
+              <div className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"} max-w-[92%] sm:max-w-[85%]`}>
                 <div
                   className="p-4 rounded-2xl leading-relaxed shadow-sm relative group-hover:shadow-lg shadow-[0_4px_20px_-5px_rgba(0,0,0,0.05)] backdrop-blur-md transition-shadow"
                   style={{
@@ -644,7 +644,7 @@ export default function NyaySetuPreview() {
                     borderTopLeftRadius: msg.role === "ai" ? 4 : 16,
                   }}
                 >
-                  <div className="space-y-2 text-[15px] leading-relaxed">
+                  <div className="space-y-2 text-[14px] sm:text-[15px] leading-relaxed">
                   <ReactMarkdown 
                     components={{
                       p: ({node, ...props}) => <p className="mb-2 last:mb-0" {...props} />,
@@ -712,7 +712,7 @@ export default function NyaySetuPreview() {
                   <Logo size={20} />
                 </div>
               </div>
-              <div className="flex items-center gap-3 p-4 rounded-2xl max-w-[85%] shadow-sm" style={{ background: isDark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.6)', color: palette.aiBubbleText, borderTopLeftRadius: 4 }}>
+              <div className="flex items-center gap-3 p-4 rounded-2xl max-w-[92%] sm:max-w-[85%] shadow-sm" style={{ background: isDark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.6)', color: palette.aiBubbleText, borderTopLeftRadius: 4 }}>
                 <div className="flex gap-1.5 pt-1">
                 <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: palette.aiBubbleText, animationDelay: '0ms' }}></span>
                 <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: palette.aiBubbleText, animationDelay: '150ms' }}></span>
@@ -726,7 +726,7 @@ export default function NyaySetuPreview() {
           <div className="h-32"></div> {/* Spacer for floating input */}
         </div>
 
-        <div className="absolute bottom-0 left-0 w-full p-6 pt-16 z-20 pointer-events-none" style={{ background: `linear-gradient(to top, ${isDark ? 'rgba(20,10,12,0.95)' : 'rgba(255,255,255,0.95)'} 20%, transparent)` }}>
+        <div className="absolute bottom-0 left-0 w-full p-3 pb-5 pt-12 sm:p-6 sm:pt-16 z-20 pointer-events-none" style={{ background: `linear-gradient(to top, ${isDark ? 'rgba(20,10,12,0.95)' : 'rgba(255,255,255,0.95)'} 20%, transparent)` }}>
           <div className="max-w-3xl mx-auto relative flex flex-col items-center pointer-events-auto">
             <div 
               className="flex items-center gap-2 w-full p-2 rounded-[1.5rem] shadow-2xl border transition-all focus-within:ring-2 focus-within:ring-opacity-50 focus-within:scale-[1.01]"
@@ -742,7 +742,7 @@ export default function NyaySetuPreview() {
               
               <input
                 type="text"
-                className="flex-1 bg-transparent border-none pl-5 pr-2 py-3 focus:outline-none text-[15px]"
+                className="flex-1 bg-transparent border-none pl-4 sm:pl-5 pr-2 py-2 sm:py-3 focus:outline-none text-[14px] sm:text-[15px]"
                 style={{ color: palette.inputText }}
                 placeholder={t.placeholder}
                 value={input}
