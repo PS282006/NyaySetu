@@ -19,13 +19,13 @@
 
 **NyaySetu (Bridge to Justice)** is an AI-powered legal assistant designed specifically for Indian citizens. It takes complex statutory legal acts, translates them into plain language, calculates exact compensation/interest amounts, and automatically drafts official, court-ready **Legal Demand Notices** and **Police FIR Complaints** in seconds.
 
-Whether you are dealing with an unpaid security deposit, workplace harassment, a defective consumer product, or filing an RTI, NyaySetu provides verified legal steps with statutory backing.
+Whether dealing with an unpaid security deposit, workplace harassment, a defective consumer product, or filing an RTI, NyaySetu provides verified legal steps with statutory backing.
 
 ---
 
 ## 🎯 Problems We Solve
 
-* **Complex Legal Language:** Simplifies dense legal sections into plain English, Hindi, and Marathi.
+* **Complex Legal Jargon:** Simplifies dense legal sections into plain English, Hindi, and Marathi.
 * **Expensive Preliminary Consultation:** Gives citizens instant, free preliminary legal clarity before hiring a lawyer.
 * **New Criminal Codes Confusion:** Full support for the newly enacted **Bharatiya Nyaya Sanhita (BNS) 2023** and **Bharatiya Nagarik Suraksha Sanhita (BNSS) 2023**.
 * **Zero Math Hallucinations:** Calculates exact compound interest on withheld dues using computational engines.
@@ -61,6 +61,30 @@ Whether you are dealing with an unpaid security deposit, workplace harassment, a
 
 ---
 
+## 💡 Original Vision & Technical Evolution
+
+### 1. Offline Local LLM on User Devices
+* **Original Plan:** Run the entire legal RAG and language model 100% locally and offline on user devices (via Ollama / quantized models) to ensure complete data privacy and zero internet dependency in rural areas.
+* **Technical Reality:** Consumer Android smartphones and lightweight nodes lack the dedicated VRAM and RAM bandwidth to run multi-step legal reasoning models locally without severe latency (60s+) and thermal throttling.
+* **Engineered Solution:** Implemented a lightning-fast cloud LPU inference pipeline (Groq) with local vector embeddings (FastEmbed + ChromaDB), delivering sub-second responses while preserving data integrity.
+
+### 2. Frictionless WhatsApp Bot Access
+* **Original Plan:** Launch a 24/7 AI paralegal directly inside WhatsApp (via Twilio / WhatsApp Business API) so citizens wouldn't need to install any app.
+* **Technical Reality:** Meta's WhatsApp Business API requires mandatory multi-day enterprise verification and business documentation approval, which could not be completed within a rapid hackathon sprint.
+* **Engineered Solution:** Built a standalone, responsive Web App and Native Android APK that deliver the same one-tap, zero-friction experience immediately.
+
+---
+
+## 🔮 Future Expansion Roadmap
+
+1. **📶 Offline Edge SLMs for Rural India:** Fine-tune 4-bit quantized Small Language Models (SLMs) optimized for on-device NPU processing to deliver true offline legal guidance in zero-connectivity villages.
+2. **💬 Verified WhatsApp & Telegram Gateways:** Launch official WhatsApp Business and Telegram bot channels once Meta approvals are complete.
+3. **🏛️ e-Courts & CCTNS Integration:** Connect with the National Judicial Data Grid (NJDG) and state police citizen portals for live case status tracking and automated e-filing.
+4. **🤝 Pro-Bono Advocate Marketplace:** Connect citizens holding valid, generated legal briefs directly with verified pro-bono and affordable legal counsel.
+5. **🗣️ 22-Language Vernacular Voice Engine:** Expand low-latency speech-to-speech models covering all 22 scheduled Indian languages and regional dialects.
+
+---
+
 ## 🛠️ Tech Stack
 
 | Layer | Technology |
@@ -73,34 +97,6 @@ Whether you are dealing with an unpaid security deposit, workplace harassment, a
 | **Math Engine** | Wolfram Alpha API |
 | **PDF Engine** | ReportLab Document Engine |
 | **Database** | SQLite + SQLAlchemy ORM (Auth & Audit Logs) |
-
----
-
-## 🚀 Easy Local Setup
-
-### 1. Backend Setup
-```bash
-# Clone repository
-git clone https://github.com/PS282006/NyaySetu.git
-cd NyaySetu
-
-# Set up Python environment
-python3 -m venv venv
-source venv/bin/activate
-
-# Install requirements & start backend
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
-```
-Backend will run at `http://localhost:8000` (API Docs at `/docs`).
-
-### 2. Frontend Setup
-```bash
-cd nyaysetu-web
-npm install
-npm run dev
-```
-Open `http://localhost:3000` in your browser.
 
 ---
 
