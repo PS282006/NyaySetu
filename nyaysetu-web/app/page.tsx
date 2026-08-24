@@ -162,7 +162,7 @@ function GoogleSignInButton({
     try {
       setIsConnecting(true);
       const clientId = "611241590650-in5gn85q6nmn1g7kctd6vp08udgume1b.apps.googleusercontent.com";
-      const redirectUri = window.location.origin;
+      const redirectUri = "https://nyay-setu-omega.vercel.app";
       const scope = "openid email profile";
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(scope)}`;
       window.location.href = authUrl;
