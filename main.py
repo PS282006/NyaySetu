@@ -190,8 +190,26 @@ async def chat_endpoint(req: NyaySetuRequest, current_user: User = Depends(get_c
 
 @app.post("/api/generate-notice")
 async def web_generate_notice(req: NyaySetuNoticeRequest):
+    # 1. Ask LLM to draft a perfect, anonymous legal notice based on the context
+    prompt = f"""You are an expert Indian Lawyer drafting a Legal Demand Notice.
+The user wants a notice based on this context:
+{req.issue_description}
+
+Rules:
+1. Write a formal, aggressive, and highly professional Legal Demand Notice based ONLY on the legal facts provided in the context above.
+2. DO NOT use personal names. Use placeholders like [Your Name], [Recipient Name], [Your Address], [Recipient Address], [Date].
+3. DO NOT include markdown asterisks (**). Output plain text. 
+4. DO NOT write "Subject: " or "To, " or "Sincerely," at the beginning or end. I am adding those parts programmatically. ONLY write the core body paragraphs of the legal notice.
+5. If the context is empty or a greeting, write a generic legal demand for resolution of dispute."""
+
+    try:
+        draft = llm.invoke(prompt).content.strip()
+    except Exception as e:
+        draft = req.issue_description
+
+    # 2. Build the PDF
     filename = "NyaySetu_Demand_Notice.pdf"
-    doc = SimpleDocTemplate(filename, pagesize=letter, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=18)
+    doc = SimpleDocTemplate(filename, pagesize=letter, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=36)
     styles = getSampleStyleSheet()
     
     title_style = styles['Heading1']
@@ -202,32 +220,35 @@ async def web_generate_notice(req: NyaySetuNoticeRequest):
     normal_style.spaceAfter = 12
     normal_style.leading = 16 
     
-    clean_text = req.issue_description.replace('₹', 'Rs. ').replace('\n', ' ')
-    
     story = []
     story.append(Paragraph("<b>LEGAL DEMAND NOTICE</b>", title_style))
     story.append(Spacer(1, 20))
     
     date_str = datetime.now().strftime("%B %d, %Y")
     story.append(Paragraph(f"<b>Date:</b> {date_str}", normal_style))
-    story.append(Paragraph("<b>To,</b><br/>[Insert Landlord Name]<br/>[Insert Landlord Address]", normal_style))
+    story.append(Paragraph("<b>To,</b><br/>[Recipient Name/Company]<br/>[Recipient Address]", normal_style))
     story.append(Spacer(1, 12))
     
-    story.append(Paragraph("<b>Subject: Formal Demand for Resolution</b>", normal_style))
+    story.append(Paragraph("<b>Subject: Formal Legal Notice for Resolution of Dispute</b>", normal_style))
     story.append(Spacer(1, 12))
     
     story.append(Paragraph("Sir/Madam,", normal_style))
-    body_intro = "I am writing to formally demand the resolution of the following matter based on my statutory rights:"
-    story.append(Paragraph(body_intro, normal_style))
+    story.append(Paragraph("Under instructions from and on behalf of my client [Your Name], residing at [Your Address], I hereby serve upon you the following Legal Notice:", normal_style))
     
-    story.append(Paragraph(f"<i>{clean_text}</i>", normal_style))
+    # Clean and append LLM draft paragraphs
+    clean_draft = draft.replace('₹', 'Rs. ')
+    paragraphs = clean_draft.split('\n')
+    for p in paragraphs:
+        p = p.strip()
+        if p and not p.startswith("To,") and not p.startswith("Subject:") and not p.startswith("Sincerely"):
+            story.append(Paragraph(p, normal_style))
     
-    warning = "You are hereby called upon to rectify this issue and remit the requested amount within <b>15 days</b> of receiving this notice. Failure to comply will leave me with no choice but to initiate appropriate legal proceedings against you in the competent courts, entirely at your risk, cost, and consequence."
+    warning = "You are hereby called upon to rectify this issue within <b>15 days</b> of receiving this notice. Failure to comply will leave my client with no choice but to initiate appropriate legal proceedings against you in the competent courts (civil and criminal), entirely at your risk, cost, and consequence."
     story.append(Paragraph(warning, normal_style))
     story.append(Spacer(1, 30))
     
     story.append(Paragraph("Sincerely,", normal_style))
-    story.append(Paragraph("<b>Parth Singh</b><br/>Panvel, Maharashtra<br/>[Insert Phone Number]", normal_style))
+    story.append(Paragraph("<b>[Your Name / Advocate Name]</b><br/>[Your Phone Number]<br/>[Your Email]", normal_style))
     
     doc.build(story)
     return FileResponse(filename, media_type='application/pdf', filename=filename)
