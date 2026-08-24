@@ -64,8 +64,14 @@ app.add_middleware(
 import os
 pass # GROQ_API_KEY is pulled automatically from Render Env Vars
 print("Loading local vector database & Groq AI...")
-embeddings = FastEmbedEmbeddings(model_name="BAAI/bge-small-en-v1.5", threads=1)
-vectorstore = Chroma(persist_directory="./chroma_db", embedding_function=embeddings)
+try:
+    embeddings = FastEmbedEmbeddings(model_name="BAAI/bge-small-en-v1.5", threads=1)
+    vectorstore = Chroma(persist_directory="./chroma_db", embedding_function=embeddings)
+except Exception as e:
+    print(f"[WARN] Vectorstore initialization fallback: {e}")
+    embeddings = None
+    vectorstore = None
+
 llm_primary = ChatGroq(model="openai/gpt-oss-20b", temperature=0.1)
 llm_fallback = ChatGroq(model="openai/gpt-oss-120b", temperature=0.1)
 llm = llm_primary.with_fallbacks([llm_fallback])
@@ -146,7 +152,7 @@ async def chat_endpoint(req: NyaySetuRequest, current_user: Optional[User] = Dep
     
     # 1. Fetch Legal Law Context (ChromaDB) with scores using the English query
     try:
-        results = vectorstore.similarity_search_with_score(english_query, k=3)
+        results = vectorstore.similarity_search_with_score(english_query, k=3) if vectorstore else []
     except Exception:
         results = []
     
