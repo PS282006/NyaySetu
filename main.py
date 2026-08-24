@@ -255,101 +255,71 @@ Rules:
 
 
 # ==========================================
-# 6. WHATSAPP ENDPOINTS (TWILIO SANDBOX)
+# 6. WHATSAPP ENDPOINTS (TWILIO DIRECT TWIML)
 # ==========================================
 @app.post("/api/whatsapp")
-async def handle_whatsapp_message(request: Request, background_tasks: BackgroundTasks):
+async def handle_whatsapp_message(request: Request):
     try:
-        form_data = await request.form()
-        
-        phone_number = form_data.get("From")
-        twilio_number = form_data.get("To") or "whatsapp:+17372212163"
-        user_text = form_data.get("Body", "")
-        media_url = form_data.get("MediaUrl0")
-        
-        if media_url:
-            background_tasks.add_task(process_twilio_audio, phone_number, media_url, twilio_number)
-        elif user_text:
-            background_tasks.add_task(process_twilio_reply, phone_number, user_text, twilio_number)
-            
-        return PlainTextResponse(content="<Response></Response>", media_type="application/xml")
-    except Exception as e:
-        print(f"[Twilio Error] {e}")
-        return PlainTextResponse(content="<Response></Response>", media_type="application/xml")
-
-def process_twilio_audio(phone_number: str, media_url: str, twilio_number: str = 'whatsapp:+17372212163'):
-    try:
-        import os, requests, tempfile
+        import html, os, requests, tempfile
         from groq import Groq
         
-        # Download Audio from Twilio
-        audio_data = requests.get(media_url).content
+        form_data = await request.form()
+        user_text = form_data.get("Body", "").strip()
+        media_url = form_data.get("MediaUrl0")
         
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".ogg") as tmp:
-            tmp.write(audio_data)
-            tmp_path = tmp.name
+        # Handle Voice Notes (Whisper)
+        if media_url and not user_text:
+            try:
+                audio_data = requests.get(media_url, timeout=10).content
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".ogg") as tmp:
+                    tmp.write(audio_data)
+                    tmp_path = tmp.name
+                    
+                client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+                with open(tmp_path, "rb") as file:
+                    transcription = client.audio.transcriptions.create(
+                        file=("audio.ogg", file.read()),
+                        model="whisper-large-v3",
+                    )
+                os.unlink(tmp_path)
+                user_text = transcription.text.strip()
+                print(f"[Twilio Audio] Transcribed: {user_text}")
+            except Exception as audio_err:
+                print(f"[Twilio Audio Error] {audio_err}")
+                
+        if not user_text:
+            return PlainTextResponse(content="<Response></Response>", media_type="application/xml")
             
-        # Transcribe
-        client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-        with open(tmp_path, "rb") as file:
-            transcription = client.audio.transcriptions.create(
-                file=("audio.ogg", file.read()),
-                model="whisper-large-v3",
-            )
-            
-        os.unlink(tmp_path)
-        user_text = transcription.text
-        print(f"[Twilio Audio] Transcribed: {user_text}")
+        print(f"[Twilio Webhook] Received user query: {user_text}")
         
-        # Pass to standard text processor
-        process_twilio_reply(phone_number, user_text, twilio_number)
-        
-    except Exception as e:
-        print(f"[Twilio Audio Error] {e}")
-
-def process_twilio_reply(phone_number: str, user_text: str, twilio_number: str = 'whatsapp:+17372212163'):
-    try:
-        import os, requests
-        from requests.auth import HTTPBasicAuth
-        
-        # 1. RAG pipeline
+        # 1. Translate Query
         translation_prompt = f"Translate to English. If English, repeat it. Output ONLY English. Query: {user_text}"
         english_query = llm.invoke(translation_prompt).content.strip()
         
+        # 2. RAG Retrieval
         results = vectorstore.similarity_search_with_score(english_query, k=3)
         context_text = ""
         for doc, score in results:
             if score <= 0.68:
                 context_text += f"\n{doc.page_content}\n"
                 
+        # 3. AI Generation
         ai_response = rag_chain.invoke({"context": context_text, "question": user_text, "language": "en"})
         reply_text = ai_response.content.strip()
         
-        # 2. Send via Twilio
-        TWILIO_SID = os.getenv("TWILIO_SID")
-        TWILIO_AUTH = os.getenv("TWILIO_AUTH")
+        print(f"[Twilio Webhook] Generated AI reply: {reply_text[:100]}...")
         
-        if not TWILIO_SID or not TWILIO_AUTH:
-            print("[Twilio] Missing credentials")
-            return
-            
-        url = f"https://api.twilio.com/2010-04-01/Accounts/{TWILIO_SID}/Messages.json"
-        auth = HTTPBasicAuth(TWILIO_SID, TWILIO_AUTH)
-        payload = {
-            "From": twilio_number,
-            "To": phone_number,
-            "Body": reply_text
-        }
+        # 4. Direct TwiML Response (Instant delivery, no outbound API key limits)
+        escaped_reply = html.escape(reply_text)
+        twiml_response = f'''<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Message>{escaped_reply}</Message>
+</Response>'''
+        return PlainTextResponse(content=twiml_response, media_type="application/xml")
         
-        res = requests.post(url, data=payload, auth=auth)
-        print(f"[Twilio] Response ({res.status_code}): {res.text}")
-        if res.status_code >= 400:
-            print(f"[Twilio Error] Failed to send message: {res.text}")
-        else:
-            print(f"[Twilio] Successfully replied to {phone_number}")
-            
     except Exception as e:
-        print(f"[Twilio Background Exception] {e}")
+        print(f"[Twilio Webhook Exception] {e}")
+        return PlainTextResponse(content="<Response></Response>", media_type="application/xml")
 
 @app.post("/api/auth/google")
 def google_auth(token_data: GoogleToken, db: Session = Depends(get_db)):
