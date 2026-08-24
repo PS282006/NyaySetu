@@ -76,6 +76,10 @@ class NyaySetuRequest(BaseModel):
 class NyaySetuNoticeRequest(BaseModel):
     issue_description: str
 
+class GoogleToken(BaseModel):
+    token: str
+
+
 
 # ==========================================
 # 4. WOLFRAM ALPHA MATH HELPER
@@ -237,9 +241,6 @@ def google_auth(token_data: GoogleToken, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Invalid Google authentication token")
 
 
-
-class GoogleToken(BaseModel):
-    token: str
 
 class AuthRequest(BaseModel):
     email: str
