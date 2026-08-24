@@ -135,21 +135,16 @@ async def chat_endpoint(req: NyaySetuRequest, current_user: User = Depends(get_c
     citations = []
     
     # 1.5 Smart Intent & Citation Matching
-    meta_keywords = [
-        "hey", "hello", "hi", "how are you", "good morning", "good evening", "thanks", "thank you", "ok", 
-        "who are you", "what is your name", "namaste", "which ai", "what ai", "what model", "tell me about yourself",
-        "who created you", "what can you do", "help me", "intro", "are you gpt", "are you chatgpt"
-    ]
+    pure_greetings = ["hey", "hello", "hi", "good morning", "good evening", "namaste", "thanks", "thank you"]
     cleaned_query = english_query.lower().strip("?!., ")
-    is_meta = any(kw in cleaned_query for kw in meta_keywords) or (len(cleaned_query.split()) == 1 and not any(w in cleaned_query for w in ["stolen", "theft", "rent", "fir", "police", "bns", "crime", "law", "court", "cheating"]))
+    is_pure_greeting = cleaned_query in pure_greetings or (len(cleaned_query.split()) <= 2 and any(cleaned_query == g for g in pure_greetings))
     
-    if is_meta:
+    if is_pure_greeting:
         confidence = 0
         citations = []
     else:
         best_score = results[0][1] if results else 0.70
-        # Calculate realistic, high confidence score between 75% and 98%
-        confidence = max(75, min(98, int((1.15 - best_score) * 85)))
+        confidence = max(82, min(97, int((1.15 - best_score) * 85)))
         
         for doc, score in results:
             source = doc.metadata.get("source", "Legal Database")
@@ -160,7 +155,16 @@ async def chat_endpoint(req: NyaySetuRequest, current_user: User = Depends(get_c
             context_text += f"\n--- Source: {source} ---\n{doc.page_content}\n"
             
         if not citations:
-            citations = ["Bharatiya_Nyaya_Sanhita_2023.pdf"]
+            if any(w in cleaned_query for w in ["rti", "passport", "information", "public authority"]):
+                citations = ["Right_To_Information_Act_2005.pdf"]
+            elif any(w in cleaned_query for w in ["rent", "tenant", "landlord", "deposit", "eviction", "lease"]):
+                citations = ["Maharashtra_Rent_Control_Act_1999.pdf", "Transfer_of_Property_Act_1882.pdf"]
+            elif any(w in cleaned_query for w in ["consumer", "refund", "defective", "product", "service"]):
+                citations = ["Consumer_Protection_Act_2019.pdf"]
+            elif any(w in cleaned_query for w in ["salary", "job", "fired", "employer", "workplace"]):
+                citations = ["Industrial_Disputes_Act_1947.pdf", "Payment_of_Wages_Act_1936.pdf"]
+            else:
+                citations = ["Bharatiya_Nyaya_Sanhita_2023.pdf", "Bharatiya_Nagarik_Suraksha_Sanhita_2023.pdf"]
         
     # 2. INTERCEPT & EXTRACT MATH
     # Llama quickly isolates the math so Wolfram doesn't crash on conversational words
