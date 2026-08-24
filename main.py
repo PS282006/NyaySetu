@@ -33,6 +33,10 @@ async def global_exception_handler(request: Request, exc: Exception):
 def health_check():
     return {"status": "NyaySetu AI is alive and running!"}
 
+@app.get("/api/version")
+def version_check():
+    return {"version": "v2.0-live", "status": "deployed_and_ready"}
+
 
 # ==========================================
 # 1. CORS CONFIGURATION (For Next.js UI)
