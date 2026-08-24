@@ -50,7 +50,7 @@ app.add_middleware(
 import os
 pass # GROQ_API_KEY is pulled automatically from Render Env Vars
 print("Loading local vector database & Groq AI...")
-embeddings = FastEmbedEmbeddings(model_name="BAAI/bge-small-en-v1.5")
+embeddings = FastEmbedEmbeddings(model_name="BAAI/bge-small-en-v1.5", threads=1)
 vectorstore = Chroma(persist_directory="./chroma_db", embedding_function=embeddings)
 retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
 llm = ChatGroq(model="openai/gpt-oss-20b", temperature=0.1)
