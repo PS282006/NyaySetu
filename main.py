@@ -17,7 +17,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, PlainTextResponse
 from pydantic import BaseModel
 from langchain_chroma import Chroma
-from langchain_ollama import OllamaEmbeddings, ChatOllama
+from langchain_groq import ChatGroq
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.prompts import ChatPromptTemplate
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
@@ -46,11 +47,13 @@ app.add_middleware(
 # ==========================================
 # 2. INITIALIZE RAG AI ENGINE
 # ==========================================
-print("Loading local vector database & Llama 3.2...")
-embeddings = OllamaEmbeddings(model="nomic-embed-text")
+import os
+pass # GROQ_API_KEY is pulled automatically from Render Env Vars
+print("Loading local vector database & Groq AI...")
+embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 vectorstore = Chroma(persist_directory="./chroma_db", embedding_function=embeddings)
 retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
-llm = ChatOllama(model="llama3.2", temperature=0.1)
+llm = ChatGroq(model="llama-3.1-8b-instant", temperature=0.1)
 
 chat_prompt = ChatPromptTemplate.from_template("""
 You are NyaySetu, an AI legal assistant providing plain-language legal information under Indian Law.
