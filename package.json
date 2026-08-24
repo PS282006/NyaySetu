@@ -1,0 +1,10 @@
+{
+  "name": "nyaysetu",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "cd nyaysetu-web && npm run build",
+    "dev": "cd nyaysetu-web && npm run dev",
+    "start": "cd nyaysetu-web && npm start"
+  }
+}

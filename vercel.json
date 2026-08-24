@@ -1,0 +1,4 @@
+{
+  "buildCommand": "cd nyaysetu-web && npm run build",
+  "outputDirectory": "nyaysetu-web/out"
+}
