@@ -503,9 +503,14 @@ export default function NyaySetuPreview() {
     setIsLoading(true);
 
     try {
+      const headers: any = { "Content-Type": "application/json" };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
       const response = await fetch("https://nyaysetu-1qbc.onrender.com/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        headers,
         body: JSON.stringify({ query: input, message: input, language: language }),
       });
 
@@ -514,10 +519,8 @@ export default function NyaySetuPreview() {
       try { data = JSON.parse(rawText); } catch { data = { reply: rawText }; }
 
       if (response.status === 401) {
-        localStorage.removeItem("token");
+        localStorage.removeItem("nyaysetu_token");
         setToken("");
-        setMessages([]);
-        return;
       }
       
       if (!response.ok) {
