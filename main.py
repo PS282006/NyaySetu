@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from db import get_db, User, AuditLog
 from auth import get_password_hash, create_access_token, get_current_user, verify_password
 
-from fastapi import FastAPI, Query, Request
+from fastapi import FastAPI, BackgroundTasks, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, PlainTextResponse
 from pydantic import BaseModel
