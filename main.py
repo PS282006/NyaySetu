@@ -18,7 +18,7 @@ from fastapi.responses import FileResponse, PlainTextResponse
 from pydantic import BaseModel
 from langchain_chroma import Chroma
 from langchain_groq import ChatGroq
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 from langchain_core.prompts import ChatPromptTemplate
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
@@ -50,7 +50,7 @@ app.add_middleware(
 import os
 pass # GROQ_API_KEY is pulled automatically from Render Env Vars
 print("Loading local vector database & Groq AI...")
-embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+embeddings = FastEmbedEmbeddings(model_name="BAAI/bge-small-en-v1.5")
 vectorstore = Chroma(persist_directory="./chroma_db", embedding_function=embeddings)
 retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
 llm = ChatGroq(model="llama-3.1-8b-instant", temperature=0.1)

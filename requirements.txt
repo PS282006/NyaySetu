@@ -174,3 +174,4 @@ xmltodict==1.0.4
 xxhash==4.0.1
 yarl==1.24.5
 zstandard==0.25.0
+fastembed==0.8.0
