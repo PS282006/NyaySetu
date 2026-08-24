@@ -255,71 +255,40 @@ Rules:
 
 
 # ==========================================
-# 6. WHATSAPP ENDPOINTS
+# 6. WHATSAPP ENDPOINTS (TWILIO SANDBOX)
 # ==========================================
-@app.get("/api/whatsapp")
-async def verify_webhook(
-    hub_mode: str = Query(None, alias="hub.mode"),
-    hub_challenge: str = Query(None, alias="hub.challenge"),
-    hub_verify_token: str = Query(None, alias="hub.verify_token")
-):
-    if hub_mode == "subscribe" and hub_verify_token == "nyaysetu_hackathon":
-        return PlainTextResponse(content=hub_challenge, status_code=200)
-    return PlainTextResponse(content="Verification failed", status_code=403)
-
 @app.post("/api/whatsapp")
 async def handle_whatsapp_message(request: Request, background_tasks: BackgroundTasks):
     try:
-        body = await request.json()
+        form_data = await request.form()
         
-        # Parse Meta's nested JSON structure
-        if body.get("object") == "whatsapp_business_account":
-            entry = body.get("entry", [{}])[0]
-            changes = entry.get("changes", [{}])[0]
-            value = changes.get("value", {})
-            messages = value.get("messages", [])
+        phone_number = form_data.get("From")
+        user_text = form_data.get("Body", "")
+        media_url = form_data.get("MediaUrl0")
+        
+        if media_url:
+            background_tasks.add_task(process_twilio_audio, phone_number, media_url)
+        elif user_text:
+            background_tasks.add_task(process_twilio_reply, phone_number, user_text)
             
-            if messages:
-                msg = messages[0]
-                phone_number = msg.get("from")
-                msg_type = msg.get("type")
-                
-                if msg_type == "text":
-                    user_text = msg.get("text", {}).get("body", "")
-                    background_tasks.add_task(process_whatsapp_reply, phone_number, user_text)
-                
-                elif msg_type == "audio":
-                    media_id = msg.get("audio", {}).get("id", "")
-                    background_tasks.add_task(process_whatsapp_audio, phone_number, media_id)
-                    
-        return {"status": "success"}
+        return PlainTextResponse(content="<Response></Response>", media_type="application/xml")
     except Exception as e:
-        print(f"[WhatsApp Error] {e}")
-        return {"status": "error"}
+        print(f"[Twilio Error] {e}")
+        return PlainTextResponse(content="<Response></Response>", media_type="application/xml")
 
-def process_whatsapp_audio(phone_number: str, media_id: str):
+def process_twilio_audio(phone_number: str, media_url: str):
     try:
         import os, requests, tempfile
         from groq import Groq
-        WA_TOKEN = os.getenv("WHATSAPP_TOKEN")
-        if not WA_TOKEN:
-            return
-            
-        # 1. Get Media URL from Meta
-        headers = {"Authorization": f"Bearer {WA_TOKEN}"}
-        res = requests.get(f"https://graph.facebook.com/v17.0/{media_id}", headers=headers).json()
-        media_url = res.get("url")
-        if not media_url:
-            return
-            
-        # 2. Download the Audio File (OGG)
-        audio_data = requests.get(media_url, headers=headers).content
         
-        # 3. Transcribe with Groq Whisper
+        # Download Audio from Twilio
+        audio_data = requests.get(media_url).content
+        
         with tempfile.NamedTemporaryFile(delete=False, suffix=".ogg") as tmp:
             tmp.write(audio_data)
             tmp_path = tmp.name
             
+        # Transcribe
         client = Groq(api_key=os.getenv("GROQ_API_KEY"))
         with open(tmp_path, "rb") as file:
             transcription = client.audio.transcriptions.create(
@@ -329,18 +298,20 @@ def process_whatsapp_audio(phone_number: str, media_id: str):
             
         os.unlink(tmp_path)
         user_text = transcription.text
-        print(f"[WhatsApp Audio] Transcribed: {user_text}")
+        print(f"[Twilio Audio] Transcribed: {user_text}")
         
-        # 4. Process the transcribed text normally
-        process_whatsapp_reply(phone_number, user_text)
+        # Pass to standard text processor
+        process_twilio_reply(phone_number, user_text)
         
     except Exception as e:
-        print(f"[WhatsApp Audio Error] {e}")
+        print(f"[Twilio Audio Error] {e}")
 
-def process_whatsapp_reply(phone_number: str, user_text: str):
+def process_twilio_reply(phone_number: str, user_text: str):
     try:
         import os, requests
-        # 1. Run basic RAG retrieval (English translated)
+        from requests.auth import HTTPBasicAuth
+        
+        # 1. RAG pipeline
         translation_prompt = f"Translate to English. If English, repeat it. Output ONLY English. Query: {user_text}"
         english_query = llm.invoke(translation_prompt).content.strip()
         
@@ -350,39 +321,33 @@ def process_whatsapp_reply(phone_number: str, user_text: str):
             if score <= 0.68:
                 context_text += f"\n{doc.page_content}\n"
                 
-        # 2. Get AI Response
         ai_response = rag_chain.invoke({"context": context_text, "question": user_text, "language": "en"})
         reply_text = ai_response.content.strip()
         
-        # 3. Send back via WhatsApp API
-        WA_TOKEN = os.getenv("WHATSAPP_TOKEN")
-        WA_PHONE_ID = os.getenv("WHATSAPP_PHONE_ID")
+        # 2. Send via Twilio
+        TWILIO_SID = os.getenv("TWILIO_SID")
+        TWILIO_AUTH = os.getenv("TWILIO_AUTH")
         
-        if not WA_TOKEN or not WA_PHONE_ID:
-            print("[WhatsApp Error] Missing WHATSAPP_TOKEN or WHATSAPP_PHONE_ID")
+        if not TWILIO_SID or not TWILIO_AUTH:
+            print("[Twilio] Missing credentials")
             return
             
-        url = f"https://graph.facebook.com/v17.0/{WA_PHONE_ID}/messages"
-        headers = {
-            "Authorization": f"Bearer {WA_TOKEN}",
-            "Content-Type": "application/json"
-        }
+        url = f"https://api.twilio.com/2010-04-01/Accounts/{TWILIO_SID}/Messages.json"
+        auth = HTTPBasicAuth(TWILIO_SID, TWILIO_AUTH)
         payload = {
-            "messaging_product": "whatsapp",
-            "to": phone_number,
-            "type": "text",
-            "text": {"body": reply_text}
+            "From": "whatsapp:+14155238886",
+            "To": phone_number,
+            "Body": reply_text
         }
         
-        requests.post(url, headers=headers, json=payload)
-        print(f"[WhatsApp Success] Replied to {phone_number}")
+        requests.post(url, data=payload, auth=auth)
+        print(f"[Twilio] Replied to {phone_number}")
         
     except Exception as e:
-        print(f"[WhatsApp Background Error] {e}")
-
+        print(f"[Twilio Background Error] {e}")
 
 @app.post("/api/auth/google")
-def google_auth(token_data: GoogleToken, db: Session = Depends(get_db)):
+token_data: GoogleToken, db: Session = Depends(get_db)):
     try:
         # Verify the Google token
         client_id = "611241590650-in5gn85q6nmn1g7kctd6vp08udgume1b.apps.googleusercontent.com"
