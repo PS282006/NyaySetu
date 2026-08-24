@@ -416,10 +416,18 @@ def google_auth(token_data: GoogleToken, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(user)
 
+@app.post("/api/auth/guest")
+def guest_auth(db: Session = Depends(get_db)):
+    guest_email = "guest@nyaysetu.com"
+    user = db.query(User).filter(User.email == guest_email).first()
+    if not user:
+        hashed_pw = get_password_hash("NYAYSETU_GUEST_SECURE_PASSWORD")
+        user = User(email=guest_email, hashed_password=hashed_pw)
+        db.add(user)
+        db.commit()
+        db.refresh(user)
     access_token = create_access_token(data={"sub": str(user.id)})
     return {"access_token": access_token, "token_type": "bearer"}
-
-
 
 class AuthRequest(BaseModel):
     email: str

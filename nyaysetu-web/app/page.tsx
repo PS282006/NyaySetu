@@ -417,6 +417,16 @@ export default function NyaySetuPreview() {
     if (t) {
       setToken(t);
       loadHistory(t);
+    } else {
+      fetch("https://nyaysetu-1qbc.onrender.com/api/auth/guest", { method: "POST" })
+        .then(res => res.json())
+        .then(d => {
+          if (d?.access_token) {
+            localStorage.setItem("nyaysetu_token", d.access_token);
+            setToken(d.access_token);
+          }
+        })
+        .catch(err => console.warn("Guest auth init:", err));
     }
   }, []);
 
