@@ -1,6 +1,11 @@
 import os
 import requests
 import urllib.parse
+
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
+from pydantic import BaseModel
+
 from fastapi import FastAPI, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, PlainTextResponse
@@ -191,3 +196,31 @@ async def handle_whatsapp_message(request: Request):
         return {"status": "success"}
     except Exception as e:
         return {"status": "error"}
+
+@app.post("/api/auth/google")
+def google_auth(token_data: GoogleToken, db: Session = Depends(get_db)):
+    try:
+        # Verify the Google token
+        client_id = "611241590650-in5gn85q6nmn1g7kctd6vp08udgume1b.apps.googleusercontent.com"
+        idinfo = id_token.verify_oauth2_token(token_data.token, google_requests.Request(), client_id)
+        
+        email = idinfo.get("email")
+        if not email:
+            raise HTTPException(status_code=400, detail="Google token did not contain an email")
+
+        # Check if user exists
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            # Create a new user with a dummy password since they use Google to login
+            hashed_pw = get_password_hash("GOOGLE_AUTH_DUMMY_PASSWORD_" + email)
+            user = User(email=email, hashed_password=hashed_pw)
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+
+        # Generate our own JWT token for the session
+        access_token = create_access_token(data={"sub": str(user.id)})
+        return {"access_token": access_token, "token_type": "bearer"}
+    except ValueError:
+        # Invalid token
+        raise HTTPException(status_code=401, detail="Invalid Google authentication token")
