@@ -164,22 +164,43 @@ function GoogleSignInButton({
   const handleGoogleLogin = async () => {
     try {
       setIsConnecting(true);
+
+      // 1. Android Native Google Play Services Plugin (Pops up native Google Account Bottom Sheet on phone!)
+      const capPlugins = (window as any).Capacitor?.Plugins;
+      if (capPlugins && capPlugins.NativeGoogleAuth) {
+        try {
+          const res = await capPlugins.NativeGoogleAuth.signIn();
+          if (res && res.idToken) {
+            const authRes = await fetch("https://nyaysetu-1qbc.onrender.com/api/auth/google", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ token: res.idToken })
+            });
+            if (authRes.ok) {
+              const data = await authRes.json();
+              onSuccessAuth(data.access_token);
+              setIsConnecting(false);
+              return;
+            }
+          }
+        } catch (nativeErr: any) {
+          console.log("Native Google Sign-In note:", nativeErr);
+          if (nativeErr?.message?.includes("cancel") || nativeErr?.message?.includes("12501")) {
+            setIsConnecting(false);
+            return;
+          }
+        }
+      }
+
+      // 2. Direct OAuth Fallback
       const clientId = "611241590650-in5gn85q6nmn1g7kctd6vp08udgume1b.apps.googleusercontent.com";
       const redirectUri = "https://nyay-setu-omega.vercel.app";
       const scope = "openid email profile";
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(scope)}&prompt=select_account`;
-
-      if (typeof window !== "undefined" && (window as any).Capacitor?.isNativePlatform?.()) {
-        await Browser.open({ url: authUrl, presentationStyle: 'popover' });
-        Browser.addListener('browserFinished', () => {
-          setIsConnecting(false);
-        });
-      } else {
-        window.location.href = authUrl;
-      }
+      window.location.href = authUrl;
     } catch (e) {
       setIsConnecting(false);
-      window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=611241590650-in5gn85q6nmn1g7kctd6vp08udgume1b.apps.googleusercontent.com&redirect_uri=https://nyay-setu-omega.vercel.app&response_type=token&scope=openid%20email%20profile&prompt=select_account`;
+      alert("Unable to open Google Sign-In.");
     }
   };
 
