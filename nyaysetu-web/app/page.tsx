@@ -165,11 +165,11 @@ function GoogleSignInButton({
     try {
       setIsConnecting(true);
 
-      // 1. Android Native Google Play Services Plugin (Pops up native Google Account Bottom Sheet on phone!)
-      const capPlugins = (window as any).Capacitor?.Plugins;
-      if (capPlugins && capPlugins.NativeGoogleAuth) {
+      // 1. Android Native Google Play Services Plugin (Direct native call to Android OS!)
+      const cap = (window as any).Capacitor;
+      if (cap && (cap.isPluginAvailable?.("NativeGoogleAuth") || cap.Plugins?.NativeGoogleAuth)) {
         try {
-          const res = await capPlugins.NativeGoogleAuth.signIn();
+          const res = await cap.Plugins.NativeGoogleAuth.signIn();
           if (res && res.idToken) {
             const authRes = await fetch("https://nyaysetu-1qbc.onrender.com/api/auth/google", {
               method: "POST",
@@ -181,26 +181,31 @@ function GoogleSignInButton({
               onSuccessAuth(data.access_token);
               setIsConnecting(false);
               return;
+            } else {
+              alert("Google authentication failed on server.");
+              setIsConnecting(false);
+              return;
             }
           }
         } catch (nativeErr: any) {
-          console.log("Native Google Sign-In note:", nativeErr);
-          if (nativeErr?.message?.includes("cancel") || nativeErr?.message?.includes("12501")) {
-            setIsConnecting(false);
-            return;
+          console.error("Native Google Sign-In error:", nativeErr);
+          setIsConnecting(false);
+          if (!nativeErr?.message?.includes("cancel") && !nativeErr?.message?.includes("12501")) {
+            alert("Google Sign-In: " + (nativeErr.message || JSON.stringify(nativeErr)));
           }
+          return;
         }
       }
 
-      // 2. Direct OAuth Fallback
+      // 2. Web fallback (if testing in a browser)
       const clientId = "611241590650-in5gn85q6nmn1g7kctd6vp08udgume1b.apps.googleusercontent.com";
       const redirectUri = "https://nyay-setu-omega.vercel.app";
       const scope = "openid email profile";
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(scope)}&prompt=select_account`;
       window.location.href = authUrl;
-    } catch (e) {
+    } catch (e: any) {
       setIsConnecting(false);
-      alert("Unable to open Google Sign-In.");
+      alert("Unable to open Google Sign-In: " + (e?.message || e));
     }
   };
 
@@ -222,7 +227,7 @@ function GoogleSignInButton({
         <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
         <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
       </svg>
-      <span>{isConnecting ? "Connecting to Google..." : "Continue with Google"}</span>
+      <span>{isConnecting ? "Opening Google Accounts..." : "Continue with Google"}</span>
     </button>
   );
 }
