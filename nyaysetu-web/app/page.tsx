@@ -156,36 +156,28 @@ function GoogleSignInButton({
   palette: any; 
   isDark: boolean; 
 }) {
-  const login = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      try {
-        const res = await fetch("https://nyaysetu-1qbc.onrender.com/api/auth/google", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token: tokenResponse.access_token })
-        });
-        if (res.ok) {
-          const data = await res.json();
-          onSuccessAuth(data.access_token);
-        } else {
-          alert("Google authentication failed on server.");
-        }
-      } catch (err) {
-        console.error("Google Auth error:", err);
-        alert("Unable to complete Google Sign-In.");
-      }
-    },
-    onError: (err) => {
-      console.error("Google Login Failed:", err);
-      alert("Google Sign-In was cancelled or failed.");
+  const [isConnecting, setIsConnecting] = useState(false);
+
+  const handleDirectGoogleLogin = () => {
+    try {
+      setIsConnecting(true);
+      const clientId = "611241590650-in5gn85q6nmn1g7kctd6vp08udgume1b.apps.googleusercontent.com";
+      const redirectUri = window.location.origin;
+      const scope = "openid email profile";
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(scope)}`;
+      window.location.href = authUrl;
+    } catch (e) {
+      setIsConnecting(false);
+      alert("Unable to open Google Sign-In.");
     }
-  });
+  };
 
   return (
     <button
       type="button"
-      onClick={() => login()}
-      className="w-full py-3.5 px-4 rounded-2xl border font-bold text-xs sm:text-sm tracking-wide shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center justify-center gap-3 backdrop-blur-md cursor-pointer"
+      onClick={handleDirectGoogleLogin}
+      disabled={isConnecting}
+      className="w-full py-3.5 px-4 rounded-2xl border font-bold text-xs sm:text-sm tracking-wide shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center justify-center gap-3 backdrop-blur-md cursor-pointer disabled:opacity-50"
       style={{
         background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.95)',
         borderColor: palette.pillBorder,
@@ -198,7 +190,7 @@ function GoogleSignInButton({
         <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
         <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
       </svg>
-      <span>Continue with Google</span>
+      <span>{isConnecting ? "Connecting to Google..." : "Continue with Google"}</span>
     </button>
   );
 }
@@ -224,6 +216,34 @@ export default function NyaySetuPreview() {
   const [password, setPassword] = useState("");
   
   useEffect(() => {
+    if (typeof window !== "undefined" && window.location.hash) {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get("access_token");
+      if (accessToken) {
+        window.history.replaceState(null, "", window.location.pathname);
+        fetch("https://nyaysetu-1qbc.onrender.com/api/auth/google", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: accessToken })
+        })
+        .then(async (res) => {
+          if (res.ok) {
+            const data = await res.json();
+            localStorage.setItem("nyaysetu_token", data.access_token);
+            setToken(data.access_token);
+            loadHistory(data.access_token);
+          } else {
+            alert("Google Sign-In verification failed.");
+          }
+        })
+        .catch((err) => {
+          console.error("Google Auth error:", err);
+          alert("Error connecting with Google.");
+        });
+        return;
+      }
+    }
+
     const t = localStorage.getItem("nyaysetu_token");
     if (t) {
       setToken(t);
