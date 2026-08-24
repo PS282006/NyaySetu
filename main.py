@@ -263,20 +263,21 @@ async def handle_whatsapp_message(request: Request, background_tasks: Background
         form_data = await request.form()
         
         phone_number = form_data.get("From")
+        twilio_number = form_data.get("To") or "whatsapp:+17372212163"
         user_text = form_data.get("Body", "")
         media_url = form_data.get("MediaUrl0")
         
         if media_url:
-            background_tasks.add_task(process_twilio_audio, phone_number, media_url)
+            background_tasks.add_task(process_twilio_audio, phone_number, media_url, twilio_number)
         elif user_text:
-            background_tasks.add_task(process_twilio_reply, phone_number, user_text)
+            background_tasks.add_task(process_twilio_reply, phone_number, user_text, twilio_number)
             
         return PlainTextResponse(content="<Response></Response>", media_type="application/xml")
     except Exception as e:
         print(f"[Twilio Error] {e}")
         return PlainTextResponse(content="<Response></Response>", media_type="application/xml")
 
-def process_twilio_audio(phone_number: str, media_url: str):
+def process_twilio_audio(phone_number: str, media_url: str, twilio_number: str = 'whatsapp:+17372212163'):
     try:
         import os, requests, tempfile
         from groq import Groq
@@ -301,12 +302,12 @@ def process_twilio_audio(phone_number: str, media_url: str):
         print(f"[Twilio Audio] Transcribed: {user_text}")
         
         # Pass to standard text processor
-        process_twilio_reply(phone_number, user_text)
+        process_twilio_reply(phone_number, user_text, twilio_number)
         
     except Exception as e:
         print(f"[Twilio Audio Error] {e}")
 
-def process_twilio_reply(phone_number: str, user_text: str):
+def process_twilio_reply(phone_number: str, user_text: str, twilio_number: str = 'whatsapp:+17372212163'):
     try:
         import os, requests
         from requests.auth import HTTPBasicAuth
@@ -335,7 +336,7 @@ def process_twilio_reply(phone_number: str, user_text: str):
         url = f"https://api.twilio.com/2010-04-01/Accounts/{TWILIO_SID}/Messages.json"
         auth = HTTPBasicAuth(TWILIO_SID, TWILIO_AUTH)
         payload = {
-            "From": "whatsapp:+14155238886",
+            "From": twilio_number,
             "To": phone_number,
             "Body": reply_text
         }
