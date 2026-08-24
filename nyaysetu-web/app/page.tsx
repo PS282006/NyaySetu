@@ -902,13 +902,8 @@ const handleGenerateNotice = async (text: string) => {
                   className="mt-2 pl-3 border-l-2 text-xs italic max-w-[80%]"
                   style={{ borderColor: palette.citationBorder, color: palette.citationText }}
                 >
-                  <div className="flex flex-wrap items-center gap-2 mb-1 notranslate">
+                  <div className="flex items-center gap-2 mb-1 notranslate">
                     <p className="font-semibold not-italic">{t.citedAuthorities}</p>
-                    {msg.confidence_score ? (
-                      <span className="not-italic bg-green-600 text-white text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full flex items-center shadow-sm whitespace-nowrap">
-                        Match Confidence: {msg.confidence_score}%
-                      </span>
-                    ) : null}
                   </div>
                   <ul className="space-y-0.5">
                     {msg.citations.map((cite, i) => (
@@ -1079,11 +1074,7 @@ const handleGenerateNotice = async (text: string) => {
                       <span className="text-[10px] font-medium opacity-60" style={{ color: palette.subtext }}>
                         {item.created_at || "Past query"}
                       </span>
-                      {item.confidence_score ? (
-                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-green-600 text-white">
-                          {item.confidence_score}%
-                        </span>
-                      ) : null}
+
                     </div>
                     <p className="text-xs font-semibold line-clamp-1 group-hover:underline" style={{ color: palette.heading }}>
                       {item.query}
