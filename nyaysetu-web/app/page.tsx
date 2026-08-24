@@ -11,7 +11,7 @@ interface HistoryItem {
 
 import { useState, useEffect } from "react";
 import { GoogleLogin } from "@react-oauth/google";
-import { History, X, Trash2, Plus, LogOut, Globe, ChevronDown, Sun, Moon, FileText, Scale, Mic, MicOff, Volume2, VolumeX, ShieldAlert, Send, User, Copy, Check, ThumbsUp, Home, Shield, Briefcase } from "lucide-react";
+import { History, X, Trash2, Plus, LogOut, Globe, ChevronDown, Sun, Moon, FileText, Scale, Volume2, VolumeX, ShieldAlert, Send, User, Copy, Check, ThumbsUp, Home, Shield, Briefcase } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
 declare global {
@@ -153,7 +153,6 @@ export default function NyaySetuPreview() {
   const [input, setInput] = useState("");
   const [historyList, setHistoryList] = useState<HistoryItem[]>([]);
   const [speakingIndex, setSpeakingIndex] = useState<number | null>(null);
-  const [isListening, setIsListening] = useState(false);
   const [isGeneratingFIR, setIsGeneratingFIR] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [messages, setMessages] = useState<{role: string, content: string, citations?: string[], confidence_score?: number}[]>([]);
@@ -389,49 +388,6 @@ export default function NyaySetuPreview() {
     setSpeakingIndex(index);
   };
 
-  const handleVoiceInput = () => {
-    if (typeof window === "undefined") return;
-    
-    const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognitionClass) {
-      alert("Voice typing is not supported in this browser. Please try Google Chrome or Safari.");
-      return;
-    }
-
-    if (isListening) {
-      setIsListening(false);
-      return;
-    }
-
-    try {
-      const recognition = new SpeechRecognitionClass();
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      
-      if (language === "hi") {
-        recognition.lang = "hi-IN";
-      } else if (language === "mr") {
-        recognition.lang = "mr-IN";
-      } else {
-        recognition.lang = "en-IN";
-      }
-
-      recognition.onstart = () => setIsListening(true);
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setInput((prev) => (prev ? `${prev} ${transcript}` : transcript));
-        setIsListening(false);
-      };
-      recognition.onerror = () => setIsListening(false);
-      recognition.onend = () => setIsListening(false);
-
-      recognition.start();
-    } catch (err) {
-      console.error("Speech recognition error:", err);
-      setIsListening(false);
-    }
-  };
-
   const handleGenerateFIR = async (text: string) => {
     if (isGeneratingFIR) return;
     setIsGeneratingFIR(true);
@@ -459,25 +415,33 @@ export default function NyaySetuPreview() {
   };
 
   const isCriminalMatter = (msg: any) => {
-    if (!msg.citations || msg.citations.length === 0) return false;
+    if (!msg || !msg.content) return false;
     const text = (msg.content + " " + (msg.citations || []).join(" ")).toLowerCase();
     const criminalKeywords = [
-      "bharatiya_nyaya_sanhita", "bns", "ipc", "fir", "police", "theft", "stolen", "assault",
-      "harass", "fraud", "cheat", "crime", "criminal", "threat", "cyber", "scam", "violence",
-      "murder", "kidnap", "extortion", "attack", "robbery", "चोरी", "धोखाधड़ी", "धमकी", "अपराध", "गुन्हा", "पोलीस"
+      "stolen", "theft", "police", "fir", "harass", "assault", "fraud", "cheat",
+      "crime", "criminal", "threat", "cyber", "scam", "violence", "murder",
+      "kidnap", "extortion", "attack", "robbery", "snatch", "cctns", "imei",
+      "bns", "ipc", "bnss", "चोरी", "धोखाधड़ी", "धमकी", "अपराध", "गुन्हा", "पोलीस", "तक्रार"
     ];
     return criminalKeywords.some((kw) => text.includes(kw));
   };
 
   const isCivilMatter = (msg: any) => {
-    if (!msg.citations || msg.citations.length === 0) return false;
+    if (!msg || !msg.content) return false;
     const text = (msg.content + " " + (msg.citations || []).join(" ")).toLowerCase();
+    
+    // If it is strictly a crime/theft without civil dispute elements, do not show legal notice
+    const strictCrimeWords = ["stolen", "theft", "snatch", "robbery", "murder", "kidnap", "assault"];
+    if (strictCrimeWords.some(w => text.includes(w)) && !text.includes("rent") && !text.includes("tenant") && !text.includes("deposit") && !text.includes("consumer") && !text.includes("defective")) {
+      return false;
+    }
+    
     const civilKeywords = [
       "consumer", "rent", "tenant", "landlord", "deposit", "property", "contract", "salary",
       "notice", "refund", "cheque", "defective", "agreement", "dispute", "transfer_of_property",
-      "maharashtra_rent_control", "consumer_protection", "किराया", "जमानत", "फ्लैट"
+      "rent control", "eviction", "किराया", "जमानत", "फ्लैट", "मालिक", "उपभोक्ता"
     ];
-    return civilKeywords.some((kw) => text.includes(kw)) || !isCriminalMatter(msg);
+    return civilKeywords.some((kw) => text.includes(kw));
   };
 
   const handleGenerateNotice = async (text: string) => {
@@ -931,7 +895,7 @@ export default function NyaySetuPreview() {
                 </div>
               )}
 
-              {msg.role === "ai" && !msg.content.includes("🚨") && msg.citations && msg.citations.length > 0 && (
+              {msg.role === "ai" && !msg.content.includes("🚨") && (isCivilMatter(msg) || isCriminalMatter(msg)) && (
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   {isCivilMatter(msg) && (
                     <button
@@ -1010,20 +974,6 @@ export default function NyaySetuPreview() {
                 onKeyDown={(e) => e.key === "Enter" && sendMessage()}
               />
               
-              <button
-                type="button"
-                onClick={handleVoiceInput}
-                className={`p-2 sm:p-2.5 rounded-full transition-all flex items-center justify-center ${
-                  isListening 
-                    ? "bg-red-500 text-white animate-pulse shadow-lg scale-105" 
-                    : "hover:bg-black/5 dark:hover:bg-white/10 opacity-70 hover:opacity-100"
-                }`}
-                style={{ color: isListening ? '#ffffff' : palette.subtext }}
-                title={isListening ? (t.listening || "Listening...") : (t.voiceInput || "Click to speak (Voice Typing)")}
-              >
-                {isListening ? <MicOff size={17} /> : <Mic size={17} />}
-              </button>
-
               <button
                 onClick={sendMessage}
                 disabled={isLoading}

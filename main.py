@@ -257,25 +257,25 @@ Rules:
 
 @app.post("/api/generate-fir")
 async def web_generate_fir(req: NyaySetuNoticeRequest):
-    # 1. Ask LLM to draft a formal police complaint under BNSS 2023 / BNS 2023
-    prompt = f"""You are a senior criminal lawyer in India.
-The complainant wants to file a formal Police Complaint / Application for Registration of FIR based on this context:
+    import html
+    prompt = f"""You are an expert criminal lawyer in India.
+Draft a detailed, formal Police Complaint / Application for Registration of FIR based on this incident:
 {req.issue_description}
 
 Rules:
-1. Write a formal, precise Police Complaint / Application for FIR.
-2. Complainant details: Use placeholders like [Complainant Name], [Complainant Address], [Phone Number], [Aadhaar/ID].
-3. Police Station details: To The Station House Officer (SHO), [Police Station Name], [City/District].
-4. Incident details: Use placeholders for [Date and Time of Occurrence], [Exact Place of Occurrence], [Details/Description of Accused Persons/Suspects].
-5. Statutory sections: Reference relevant sections of the Bharatiya Nyaya Sanhita (BNS) 2023, Bharatiya Nagarik Suraksha Sanhita (BNSS) 2023, or Information Technology Act 2000 (if cyber).
-6. DO NOT include markdown asterisks (**). Output plain formal text.
-7. ONLY write the body paragraphs describing the facts, offenses, witness list, and formal prayer for investigation and FIR registration."""
+1. Write 3 to 4 detailed paragraphs covering:
+   - Facts of the incident (Date, Time, Place of Occurrence, how the incident took place).
+   - Description of stolen articles / damages / offenses committed (with placeholders for device details, IMEI, or vehicle registration if applicable).
+   - Relevant statutory provisions under Bharatiya Nyaya Sanhita (BNS), 2023 / Bharatiya Nagarik Suraksha Sanhita (BNSS), 2023 / IT Act.
+   - Request to preserve CCTV footage, trace technical logs, and question suspects/witnesses.
+2. Use standard bracketed placeholders: [Complainant Name], [Complainant Address], [Phone Number], [Date and Time], [Exact Location], [Description of Stolen Items / IMEI No], [Suspect Details], [Witness Details].
+3. DO NOT include markdown asterisks (**). Output plain text.
+4. DO NOT include headers or footers like "To,", "Subject:", "Respected Sir", or "Yours faithfully" (these are added programmatically)."""
     try:
         draft = llm.invoke(prompt).content.strip()
     except Exception as e:
         draft = req.issue_description
 
-    # 2. Build the PDF
     filename = "NyaySetu_Police_FIR_Complaint.pdf"
     doc = SimpleDocTemplate(filename, pagesize=letter, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=36)
     styles = getSampleStyleSheet()
@@ -307,13 +307,15 @@ Rules:
     story.append(Spacer(1, 10))
     
     story.append(Paragraph("Respected Sir/Madam,", normal_style))
-    story.append(Paragraph("I, the undersigned Complainant [Your Name], residing at [Your Complete Address], Contact No: [Your Phone Number], do hereby submit this formal complaint regarding the following criminal incident:", normal_style))
+    story.append(Paragraph("I, the undersigned Complainant [Your Name], residing at [Your Complete Address], Contact No: [Your Phone Number], do hereby submit this formal complaint regarding the following incident:", normal_style))
     
-    clean_draft = draft.replace('₹', 'Rs. ')
-    for p in clean_draft.split('\n'):
+    clean_draft = draft.replace('₹', 'Rs. ').replace('**', '').replace('###', '')
+    paragraphs = clean_draft.split('\n')
+    for p in paragraphs:
         p = p.strip()
-        if p and not p.startswith("To,") and not p.startswith("SUBJECT:") and not p.startswith("Respected") and not p.startswith("Yours"):
-            story.append(Paragraph(p, normal_style))
+        if p and not p.lower().startswith("to,") and not p.lower().startswith("subject:") and not p.lower().startswith("respected") and not p.lower().startswith("yours"):
+            escaped_p = html.escape(p)
+            story.append(Paragraph(escaped_p, normal_style))
             
     prayer = "<b>PRAYER / DEMAND FOR ACTION:</b><br/>In light of the aforesaid facts, it is most respectfully prayed that an FIR may kindly be registered under the relevant sections of Bharatiya Nyaya Sanhita (BNS) 2023 against the accused persons, immediate investigation be initiated, relevant evidence/CCTV footage be secured, and necessary legal action be taken against the culprits to protect the Complainant and uphold the rule of law."
     story.append(Spacer(1, 10))
