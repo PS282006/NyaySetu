@@ -689,88 +689,96 @@ const handleGenerateNotice = async (text: string) => {
         }}
       >
         <div
-          className="flex items-center justify-between p-3 sm:p-5 border-b z-20 backdrop-blur-md"
+          className="flex items-center justify-between px-3 py-2.5 sm:p-5 border-b z-20 backdrop-blur-md"
           style={{ background: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.4)', borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }}
         >
-          <div className="flex items-center gap-3 notranslate">
-            <Logo size={44} />
-            <div>
-              <h1 className="text-xl font-bold leading-tight" style={{ color: palette.heading }}>
+          {/* Brand Logo & Name */}
+          <div className="flex items-center gap-2 sm:gap-3 notranslate flex-shrink min-w-0">
+            <div className="w-8 h-8 sm:w-11 sm:h-11 flex-shrink-0 flex items-center justify-center">
+              <Logo size={32} />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-base sm:text-xl font-bold leading-tight truncate" style={{ color: palette.heading }}>
                 NyaySetu
               </h1>
-              <p className="text-[11px] tracking-wide font-medium" style={{ color: palette.subtext }}>
+              <p className="hidden sm:block text-[11px] tracking-wide font-medium truncate" style={{ color: palette.subtext }}>
                 {t.tagline}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-1 sm:gap-2">
+          {/* Symmetrical Floating Icon / Pill Bar */}
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             <button 
               onClick={openHistoryDrawer}
-              className="flex items-center justify-center w-7 h-7 sm:w-auto sm:h-auto gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border text-[10px] sm:text-xs font-semibold notranslate transition-opacity hover:opacity-80 relative"
+              className="flex items-center justify-center w-7 h-7 sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 rounded-full border text-xs font-semibold notranslate transition-all hover:scale-105 active:scale-95 relative shadow-sm"
               style={{ borderColor: palette.pillBorder, color: palette.heading, background: palette.pillBg }}
-              title="View Consultation History"
+              title="Consultation History"
             >
               <History size={13} />
-              <span className="hidden sm:inline">{t.history || "History"}</span>
+              <span className="hidden sm:inline sm:ml-1.5">{t.history || "History"}</span>
               {historyList.length > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-amber-500 sm:hidden"></span>
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-amber-500 sm:hidden animate-pulse"></span>
               )}
             </button>
+
             <button 
               onClick={handleNewChat}
-              className="flex items-center justify-center w-7 h-7 sm:w-auto sm:h-auto gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border text-[10px] sm:text-xs font-semibold notranslate transition-opacity hover:opacity-80"
+              className="flex items-center justify-center w-7 h-7 sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 rounded-full border text-xs font-semibold notranslate transition-all hover:scale-105 active:scale-95 shadow-sm"
               style={{ borderColor: palette.pillBorder, color: palette.heading, background: palette.pillBg }}
-              title="Start New Conversation"
+              title="New Conversation"
             >
               <Plus size={13} />
-              <span className="hidden sm:inline">{t.newChat || "New Chat"}</span>
+              <span className="hidden sm:inline sm:ml-1.5">{t.newChat || "New Chat"}</span>
             </button>
+
             <button 
               onClick={handleLogout}
-              className="flex items-center justify-center w-7 h-7 sm:w-auto sm:h-auto gap-1.5 sm:px-3 sm:py-1.5 rounded-full border text-xs font-semibold notranslate transition-opacity hover:opacity-80"
+              className="flex items-center justify-center w-7 h-7 sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 rounded-full border text-xs font-semibold notranslate transition-all hover:scale-105 active:scale-95 shadow-sm"
               style={{ borderColor: palette.pillBorder, color: palette.heading, background: palette.pillBg }}
               title="Sign Out"
             >
-              <LogOut size={13} className="sm:hidden" />
-              <span className="hidden sm:inline">Log Out</span>
+              <LogOut size={13} />
+              <span className="hidden sm:inline sm:ml-1.5">Log Out</span>
             </button>
+
             <a 
               href="https://nalsa.gov.in" 
               target="_blank" 
               rel="noreferrer"
-              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border text-[9px] sm:text-xs font-semibold notranslate transition-opacity hover:opacity-80"
+              className="flex items-center justify-center w-7 h-7 sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 rounded-full border text-xs font-semibold notranslate transition-all hover:scale-105 active:scale-95 shadow-sm"
               style={{ borderColor: palette.pillBorder, color: palette.heading, background: palette.pillBg }}
-              title="Seek Human Legal Aid"
+              title="NALSA Human Legal Aid"
             >
               <Scale size={13} />
-              <span className="hidden sm:inline">NALSA Legal Aid</span>
-              <span className="sm:hidden">NALSA</span>
+              <span className="hidden sm:inline sm:ml-1.5">NALSA Legal Aid</span>
             </a>
+
             <div className="relative">
               <button
                 onClick={() => setLangMenuOpen((o) => !o)}
-                className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border text-[10px] sm:text-sm font-medium notranslate"
+                className="flex items-center justify-center w-7 h-7 sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 rounded-full border text-xs font-semibold notranslate transition-all hover:scale-105 active:scale-95 shadow-sm"
                 style={{ background: palette.pillBg, borderColor: palette.pillBorder, color: palette.heading }}
+                title="Change Language"
               >
-                <Globe size={13} />
-                <span className="hidden sm:inline">{LANGUAGE_LABELS[language]}</span>
-                <span className="sm:hidden uppercase tracking-wider">{language}</span>
-                <ChevronDown size={11} />
+                <Globe size={13} className="hidden sm:inline" />
+                <span className="hidden sm:inline sm:ml-1.5">{LANGUAGE_LABELS[language]}</span>
+                <span className="sm:hidden font-bold text-[10px] uppercase">{language}</span>
+                <ChevronDown size={11} className="hidden sm:inline sm:ml-1" />
               </button>
               {langMenuOpen && (
                 <div
-                  className="absolute right-0 mt-2 w-32 rounded-lg border shadow-lg overflow-hidden z-10 notranslate"
-                  style={{ background: palette.pillBg, borderColor: palette.pillBorder }}
+                  className="absolute right-0 mt-2 w-32 rounded-xl border shadow-2xl overflow-hidden z-30 notranslate backdrop-blur-xl animate-in fade-in slide-in-from-top-2"
+                  style={{ background: isDark ? 'rgba(31, 17, 19, 0.95)' : 'rgba(255, 255, 255, 0.95)', borderColor: palette.pillBorder }}
                 >
                   {Object.entries(LANGUAGE_LABELS).map(([lang, label]) => (
                     <button
                       key={lang}
-                        onClick={() => handleLanguageChange(lang as "en"|"hi"|"mr")}
-                        className="w-full text-left px-3 py-2 text-sm hover:bg-black/5"
+                      onClick={() => handleLanguageChange(lang as "en"|"hi"|"mr")}
+                      className="w-full text-left px-3.5 py-2.5 text-xs font-medium hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
                       style={{
                         color: palette.heading,
-                        background: lang === language ? palette.aiBubbleBg : "transparent",
+                        background: lang === language ? (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)') : "transparent",
                       }}
                     >
                       {label}
@@ -782,11 +790,12 @@ const handleGenerateNotice = async (text: string) => {
 
             <button
               onClick={() => setTheme(isDark ? "light" : "dark")}
-              className="flex items-center justify-center w-7 h-7 sm:w-auto sm:h-auto gap-1.5 sm:px-3 sm:py-1.5 rounded-full border text-xs font-bold tracking-wide notranslate"
+              className="flex items-center justify-center w-7 h-7 sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 rounded-full border text-xs font-semibold notranslate transition-all hover:scale-105 active:scale-95 shadow-sm"
               style={{ background: palette.pillBg, borderColor: palette.pillBorder, color: palette.heading }}
+              title="Toggle Light/Dark Theme"
             >
               {isDark ? <Moon size={13} /> : <Sun size={13} />}
-              <span className="hidden sm:inline">{isDark ? t.dark : t.light}</span>
+              <span className="hidden sm:inline sm:ml-1.5">{isDark ? t.dark : t.light}</span>
             </button>
           </div>
           <div id="google_translate_element" style={{ display: 'none' }}></div>
