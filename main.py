@@ -52,7 +52,7 @@ pass # GROQ_API_KEY is pulled automatically from Render Env Vars
 print("Loading local vector database & Groq AI...")
 embeddings = FastEmbedEmbeddings(model_name="BAAI/bge-small-en-v1.5", threads=1)
 vectorstore = Chroma(persist_directory="./chroma_db", embedding_function=embeddings)
-llm_primary = ChatGroq(model="openai/gpt-oss-120b", temperature=0.1)
+llm_primary = ChatGroq(model="groq/compound", temperature=0.1)
 llm_fallback = ChatGroq(model="groq/compound-mini", temperature=0.1)
 llm = llm_primary.with_fallbacks([llm_fallback])
 
