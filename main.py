@@ -254,73 +254,6 @@ Rules:
     return FileResponse(filename, media_type='application/pdf', filename=filename)
 
 
-# ==========================================
-# 6. WHATSAPP ENDPOINTS (TWILIO DIRECT TWIML)
-# ==========================================
-@app.post("/api/whatsapp")
-async def handle_whatsapp_message(request: Request):
-    try:
-        import html, os, requests, tempfile
-        from groq import Groq
-        
-        form_data = await request.form()
-        user_text = form_data.get("Body", "").strip()
-        media_url = form_data.get("MediaUrl0")
-        
-        # Handle Voice Notes (Whisper)
-        if media_url and not user_text:
-            try:
-                audio_data = requests.get(media_url, timeout=10).content
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".ogg") as tmp:
-                    tmp.write(audio_data)
-                    tmp_path = tmp.name
-                    
-                client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-                with open(tmp_path, "rb") as file:
-                    transcription = client.audio.transcriptions.create(
-                        file=("audio.ogg", file.read()),
-                        model="whisper-large-v3",
-                    )
-                os.unlink(tmp_path)
-                user_text = transcription.text.strip()
-                print(f"[Twilio Audio] Transcribed: {user_text}")
-            except Exception as audio_err:
-                print(f"[Twilio Audio Error] {audio_err}")
-                
-        if not user_text:
-            return PlainTextResponse(content="<Response></Response>", media_type="application/xml")
-            
-        print(f"[Twilio Webhook] Received user query: {user_text}")
-        
-        # 1. Translate Query
-        translation_prompt = f"Translate to English. If English, repeat it. Output ONLY English. Query: {user_text}"
-        english_query = llm.invoke(translation_prompt).content.strip()
-        
-        # 2. RAG Retrieval
-        results = vectorstore.similarity_search_with_score(english_query, k=3)
-        context_text = ""
-        for doc, score in results:
-            if score <= 0.68:
-                context_text += f"\n{doc.page_content}\n"
-                
-        # 3. AI Generation
-        ai_response = rag_chain.invoke({"context": context_text, "question": user_text, "language": "en"})
-        reply_text = ai_response.content.strip()
-        
-        print(f"[Twilio Webhook] Generated AI reply: {reply_text[:100]}...")
-        
-        # 4. Direct TwiML Response (Instant delivery, no outbound API key limits)
-        escaped_reply = html.escape(reply_text)
-        twiml_response = f'''<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-    <Message>{escaped_reply}</Message>
-</Response>'''
-        return PlainTextResponse(content=twiml_response, media_type="application/xml")
-        
-    except Exception as e:
-        print(f"[Twilio Webhook Exception] {e}")
-        return PlainTextResponse(content="<Response></Response>", media_type="application/xml")
-
 @app.post("/api/auth/google")
 def google_auth(token_data: GoogleToken, db: Session = Depends(get_db)):
     try:
@@ -396,3 +329,10 @@ def get_history(current_user: User = Depends(get_current_user), db: Session = De
             "confidence_score": log.confidence_score
         })
     return res
+
+@app.delete("/api/history")
+@app.post("/api/clear-history")
+def clear_history(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    db.query(AuditLog).filter(AuditLog.user_id == current_user.id).delete()
+    db.commit()
+    return {"status": "success", "message": "History cleared"}

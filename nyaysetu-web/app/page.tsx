@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { GoogleLogin } from "@react-oauth/google";
-import { LogOut, Globe, ChevronDown, Sun, Moon, FileText, Scale, Mic, Send, User, Copy, Check, ThumbsUp, Home, Shield, Briefcase } from "lucide-react";
+import { Trash2, LogOut, Globe, ChevronDown, Sun, Moon, FileText, Scale, Mic, Send, User, Copy, Check, ThumbsUp, Home, Shield, Briefcase } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
 declare global {
@@ -14,6 +14,7 @@ declare global {
 const TRANSLATIONS: any = {
   en: {
     tagline: "YOUR AI LEGAL ASSISTANT",
+    clearChat: "Clear Chat",
     placeholder: "E.g., My landlord won't return my deposit...",
     send: "Send",
     generateNotice: "Generate Legal Notice",
@@ -179,6 +180,22 @@ export default function NyaySetuPreview() {
       }
     } catch (e) {
       alert("Backend not reachable");
+    }
+  };
+
+    const handleClearHistory = async () => {
+    if (messages.length === 0) return;
+    if (!window.confirm("Are you sure you want to clear your chat history?")) return;
+    setMessages([]);
+    try {
+      if (token) {
+        await fetch("https://nyaysetu-1qbc.onrender.com/api/history", {
+          method: "DELETE",
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+      }
+    } catch (err) {
+      console.error("Failed to delete history:", err);
     }
   };
 
@@ -526,6 +543,17 @@ export default function NyaySetuPreview() {
           </div>
 
           <div className="flex items-center gap-1 sm:gap-2">
+            {messages.length > 0 && (
+              <button 
+                onClick={handleClearHistory}
+                className="flex items-center justify-center w-7 h-7 sm:w-auto sm:h-auto gap-1.5 sm:px-3 sm:py-1.5 rounded-full border text-xs font-semibold notranslate transition-opacity hover:opacity-80 text-red-500 hover:bg-red-500/10"
+                style={{ borderColor: palette.pillBorder, background: palette.pillBg }}
+                title="Clear Chat History"
+              >
+                <Trash2 size={13} />
+                <span className="hidden sm:inline">{t.clearChat || "Clear Chat"}</span>
+              </button>
+            )}
             <button 
               onClick={handleLogout}
               className="flex items-center justify-center w-7 h-7 sm:w-auto sm:h-auto gap-1.5 sm:px-3 sm:py-1.5 rounded-full border text-xs font-semibold notranslate transition-opacity hover:opacity-80"
