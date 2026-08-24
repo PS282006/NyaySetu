@@ -169,15 +169,16 @@ export default function NyaySetuPreview() {
       if (res.ok) {
         const hist: HistoryItem[] = await res.json();
         setHistoryList(hist);
-        if (hist.length > 0) {
-          const latest = hist[0];
-          setMessages([
-            { role: "user", content: latest.query },
-            { role: "ai", content: latest.reply, citations: latest.citations, confidence_score: latest.confidence_score }
-          ]);
-        }
       }
     } catch(e) {}
+  };
+
+  const openHistoryDrawer = () => {
+    setIsHistoryOpen(true);
+    const t = token || localStorage.getItem("nyaysetu_token");
+    if (t) {
+      loadHistory(t);
+    }
   };
 
   const handleSelectHistory = (item: HistoryItem) => {
@@ -312,12 +313,23 @@ export default function NyaySetuPreview() {
         return;
       }
 
+      const aiReply = data.reply || "Something went wrong. Please try again.";
       setMessages([...newMessages, { 
         role: "ai", 
-        content: data.reply || "Something went wrong. Please try again.",
+        content: aiReply,
         citations: data.citations,
         confidence_score: data.confidence_score
       }]);
+      
+      const newHistItem: HistoryItem = {
+        id: Date.now(),
+        query: input,
+        reply: aiReply,
+        citations: data.citations,
+        confidence_score: data.confidence_score,
+        created_at: "Just now"
+      };
+      setHistoryList(prev => [newHistItem, ...prev]);
     } catch (error) {
       console.error("Error connecting to backend:", error);
       setMessages([...newMessages, { role: "ai", content: "Unable to reach the NyaySetu server. Please check your connection and try again." }]);
@@ -574,7 +586,7 @@ export default function NyaySetuPreview() {
 
           <div className="flex items-center gap-1 sm:gap-2">
             <button 
-              onClick={() => setIsHistoryOpen(true)}
+              onClick={openHistoryDrawer}
               className="flex items-center justify-center w-7 h-7 sm:w-auto sm:h-auto gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border text-[10px] sm:text-xs font-semibold notranslate transition-opacity hover:opacity-80 relative"
               style={{ borderColor: palette.pillBorder, color: palette.heading, background: palette.pillBg }}
               title="View Consultation History"
