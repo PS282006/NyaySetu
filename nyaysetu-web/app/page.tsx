@@ -10,6 +10,8 @@ interface HistoryItem {
 
 
 import { useState, useEffect } from "react";
+import { GoogleAuth } from "@codetrix-studio/capacitor-google-auth";
+import { Capacitor } from "@capacitor/core";
 import { GoogleLogin, useGoogleLogin } from "@react-oauth/google";
 import { History, X, Trash2, Plus, LogOut, Globe, ChevronDown, Sun, Moon, FileText, Scale, Volume2, VolumeX, ShieldAlert, Send, User, Copy, Check, ThumbsUp, Home, Shield, Briefcase } from "lucide-react";
 import ReactMarkdown from "react-markdown";
@@ -158,13 +160,48 @@ function GoogleSignInButton({
 }) {
   const [isConnecting, setIsConnecting] = useState(false);
 
-  const handleDirectGoogleLogin = () => {
+  const handleGoogleLogin = async () => {
     try {
       setIsConnecting(true);
+
+      // 1. Native Android Google Play Services (Pops up native Google Account Picker on phone!)
+      if (typeof window !== "undefined" && Capacitor.isNativePlatform()) {
+        try {
+          GoogleAuth.initialize({
+            clientId: "611241590650-in5gn85q6nmn1g7kctd6vp08udgume1b.apps.googleusercontent.com",
+            scopes: ["profile", "email"],
+            grantOfflineAccess: true,
+          });
+          const googleUser = await GoogleAuth.signIn();
+          const tokenToSend = googleUser.authentication?.idToken || googleUser.authentication?.accessToken;
+          if (tokenToSend) {
+            const res = await fetch("https://nyaysetu-1qbc.onrender.com/api/auth/google", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ token: tokenToSend })
+            });
+            if (res.ok) {
+              const data = await res.json();
+              onSuccessAuth(data.access_token);
+              setIsConnecting(false);
+              return;
+            }
+          }
+        } catch (nativeErr: any) {
+          console.log("Native Google Sign-In note:", nativeErr);
+          // If explicitly cancelled by user, stop
+          if (nativeErr?.message?.includes("cancel") || nativeErr?.message?.includes("12501")) {
+            setIsConnecting(false);
+            return;
+          }
+        }
+      }
+
+      // 2. Direct OAuth with prompt=select_account (Displays list of phone/browser Google accounts!)
       const clientId = "611241590650-in5gn85q6nmn1g7kctd6vp08udgume1b.apps.googleusercontent.com";
       const redirectUri = "https://nyay-setu-omega.vercel.app";
       const scope = "openid email profile";
-      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(scope)}`;
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(scope)}&prompt=select_account`;
       window.location.href = authUrl;
     } catch (e) {
       setIsConnecting(false);
@@ -175,9 +212,9 @@ function GoogleSignInButton({
   return (
     <button
       type="button"
-      onClick={handleDirectGoogleLogin}
+      onClick={handleGoogleLogin}
       disabled={isConnecting}
-      className="w-full py-3.5 px-4 rounded-2xl border font-bold text-xs sm:text-sm tracking-wide shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center justify-center gap-3 backdrop-blur-md cursor-pointer disabled:opacity-50"
+      className="w-full py-3.5 px-4 rounded-2xl border font-bold text-xs sm:text-sm tracking-wide shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center justify-center gap-3 backdrop-blur-md cursor-pointer disabled:opacity-60"
       style={{
         background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.95)',
         borderColor: palette.pillBorder,
