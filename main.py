@@ -5,6 +5,7 @@ import urllib.parse
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from pydantic import BaseModel
+from typing import Optional, List, Dict, Any
 
 
 from fastapi import Depends, HTTPException
@@ -83,7 +84,9 @@ class NyaySetuRequest(BaseModel):
     language: str = "en"
 
 class NyaySetuNoticeRequest(BaseModel):
-    issue_description: str
+    issue_description: Optional[str] = ""
+    incident_description: Optional[str] = ""
+    language: Optional[str] = "en"
 
 class GoogleToken(BaseModel):
     token: str
@@ -268,9 +271,10 @@ Rules:
 @app.post("/api/generate-fir")
 async def web_generate_fir(req: NyaySetuNoticeRequest):
     import html
+    incident_text = req.incident_description or req.issue_description or ""
     prompt = f"""You are an expert criminal lawyer in India.
 Draft a detailed, formal Police Complaint / Application for Registration of FIR based on this incident:
-{req.issue_description}
+{incident_text}
 
 Rules:
 1. Write 3 to 4 detailed paragraphs covering:

@@ -11,6 +11,8 @@ interface HistoryItem {
 
 import { useState, useEffect } from "react";
 import { Browser } from "@capacitor/browser";
+import { Filesystem, Directory } from "@capacitor/filesystem";
+import { Share } from "@capacitor/share";
 import { App } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 import { GoogleLogin, useGoogleLogin } from "@react-oauth/google";
@@ -230,6 +232,53 @@ function GoogleSignInButton({
       <span>{isConnecting ? "Opening Google Accounts..." : "Continue with Google"}</span>
     </button>
   );
+}
+
+async function downloadOrSharePdf(blob: Blob, filename: string) {
+  try {
+    const isNative = typeof window !== "undefined" && (window as any).Capacitor?.isNativePlatform?.();
+    if (isNative) {
+      const reader = new FileReader();
+      const base64Data = await new Promise<string>((resolve, reject) => {
+        reader.onloadend = () => {
+          const res = reader.result as string;
+          const base64 = res.split(",")[1];
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+
+      const savedFile = await Filesystem.writeFile({
+        path: filename,
+        data: base64Data,
+        directory: Directory.Cache,
+      });
+
+      await Share.share({
+        title: filename,
+        text: 'Your generated NyaySetu legal document is ready.',
+        url: savedFile.uri,
+        dialogTitle: 'Save or View PDF'
+      });
+    } else {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+    }
+  } catch (err) {
+    console.error("PDF download/share error:", err);
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+  }
 }
 
 export default function NyaySetuPreview() {
@@ -539,20 +588,16 @@ export default function NyaySetuPreview() {
       const res = await fetch("https://nyaysetu-1qbc.onrender.com/api/generate-fir", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ issue_description: text, language: language })
+        body: JSON.stringify({ incident_description: text, language: language })
       });
       
       if (!res.ok) throw new Error("Failed to generate Police FIR Complaint PDF");
       
       const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "NyaySetu_Police_FIR_Complaint.pdf";
-      a.click();
-    } catch (err) {
-      console.error(err);
-      alert("Error generating the Police FIR Complaint document.");
+      await downloadOrSharePdf(blob, "NyaySetu_Police_FIR_Complaint.pdf");
+    } catch (err: any) {
+      console.error("FIR generation error:", err);
+      alert("Error generating the Police FIR Complaint document: " + (err.message || err));
     } finally {
       setIsGeneratingFIR(false);
     }
@@ -611,14 +656,10 @@ const handleGenerateNotice = async (text: string) => {
       if (!res.ok) throw new Error("Failed to generate PDF");
       
       const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "NyaySetu_Demand_Notice.pdf";
-      a.click();
-    } catch (err) {
-      console.error(err);
-      alert("Error generating the legal notice.");
+      await downloadOrSharePdf(blob, "NyaySetu_Demand_Notice.pdf");
+    } catch (err: any) {
+      console.error("Notice generation error:", err);
+      alert("Error generating the legal notice: " + (err.message || err));
     } finally {
       setIsGenerating(false);
     }
