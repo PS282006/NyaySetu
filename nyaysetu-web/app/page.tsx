@@ -521,22 +521,22 @@ export default function NyaySetuPreview() {
           <div className="flex items-center gap-2">
             <button 
               onClick={handleLogout}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold notranslate transition-opacity hover:opacity-80"
+              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-full border text-[10px] sm:text-xs font-semibold notranslate transition-opacity hover:opacity-80"
               style={{ borderColor: palette.pillBorder, color: palette.heading, background: palette.pillBg }}
               title="Sign Out"
             >
-              Log Out
+              <span className="hidden sm:inline">Log Out</span><span className="sm:hidden">Exit</span>
             </button>
             <a 
               href="https://nalsa.gov.in" 
               target="_blank" 
               rel="noreferrer"
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold notranslate transition-opacity hover:opacity-80"
+              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-full border text-[10px] sm:text-xs font-semibold notranslate transition-opacity hover:opacity-80"
               style={{ borderColor: palette.pillBorder, color: palette.heading, background: palette.pillBg }}
               title="Seek Human Legal Aid"
             >
-              <Scale size={14} />
-              NALSA Legal Aid
+              <Scale size={12} className="sm:w-3.5 sm:h-3.5" />
+              <span className="hidden sm:inline">NALSA Legal Aid</span><span className="sm:hidden">NALSA</span>
             </a>
             <div className="relative">
               <button
@@ -675,10 +675,10 @@ export default function NyaySetuPreview() {
                   className="mt-2 pl-3 border-l-2 text-xs italic max-w-[80%]"
                   style={{ borderColor: palette.citationBorder, color: palette.citationText }}
                 >
-                  <div className="flex items-center gap-2 mb-1 notranslate">
+                  <div className="flex flex-wrap items-center gap-2 mb-1 notranslate">
                     <p className="font-semibold not-italic">{t.citedAuthorities}</p>
                     {msg.confidence_score ? (
-                      <span className="not-italic bg-green-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center shadow-sm">
+                      <span className="not-italic bg-green-600 text-white text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full flex items-center shadow-sm whitespace-nowrap">
                         Match Confidence: {msg.confidence_score}%
                       </span>
                     ) : null}
@@ -695,7 +695,7 @@ export default function NyaySetuPreview() {
                 <button
                   onClick={() => handleGenerateNotice(msg.content)}
                   disabled={isGenerating}
-                  className="mt-3 flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+                  className="mt-3 flex items-center w-fit gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
                   style={{ background: palette.accent, color: palette.accentText }}
                 >
                   <FileText size={16} />
@@ -723,13 +723,13 @@ export default function NyaySetuPreview() {
             </div>
           )}
           
-          <div className="h-32"></div> {/* Spacer for floating input */}
+          <div className="h-40 sm:h-32"></div> {/* Spacer for floating input */}
         </div>
 
         <div className="absolute bottom-0 left-0 w-full p-3 pb-5 pt-12 sm:p-6 sm:pt-16 z-20 pointer-events-none" style={{ background: `linear-gradient(to top, ${isDark ? 'rgba(20,10,12,0.95)' : 'rgba(255,255,255,0.95)'} 20%, transparent)` }}>
           <div className="max-w-3xl mx-auto relative flex flex-col items-center pointer-events-auto">
             <div 
-              className="flex items-center gap-2 w-full p-2 rounded-[1.5rem] shadow-2xl border transition-all focus-within:ring-2 focus-within:ring-opacity-50 focus-within:scale-[1.01]"
+              className="flex items-center gap-1.5 sm:gap-2 w-full p-1.5 sm:p-2 rounded-3xl sm:rounded-[1.5rem] shadow-xl sm:shadow-2xl border transition-all focus-within:ring-2 focus-within:ring-opacity-50 focus-within:scale-[1.01]"
               style={{ 
                 background: isDark ? 'rgba(0, 0, 0, 0.4)' : 'rgba(255, 255, 255, 0.8)',
                 backdropFilter: 'blur(20px)',
