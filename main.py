@@ -53,7 +53,7 @@ print("Loading local vector database & Groq AI...")
 embeddings = FastEmbedEmbeddings(model_name="BAAI/bge-small-en-v1.5")
 vectorstore = Chroma(persist_directory="./chroma_db", embedding_function=embeddings)
 retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
-llm = ChatGroq(model="llama-3.1-8b-instant", temperature=0.1)
+llm = ChatGroq(model="openai/gpt-oss-20b", temperature=0.1)
 
 chat_prompt = ChatPromptTemplate.from_template("""
 You are NyaySetu, an AI legal assistant providing plain-language legal information under Indian Law.
