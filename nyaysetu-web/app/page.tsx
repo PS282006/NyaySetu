@@ -414,37 +414,51 @@ export default function NyaySetuPreview() {
     }
   };
 
-  const isCriminalMatter = (msg: any) => {
-    if (!msg || !msg.content) return false;
-    const text = (msg.content + " " + (msg.citations || []).join(" ")).toLowerCase();
-    const criminalKeywords = [
-      "stolen", "theft", "police", "fir", "harass", "assault", "fraud", "cheat",
-      "crime", "criminal", "threat", "cyber", "scam", "violence", "murder",
-      "kidnap", "extortion", "attack", "robbery", "snatch", "cctns", "imei",
-      "bns", "ipc", "bnss", "चोरी", "धोखाधड़ी", "धमकी", "अपराध", "गुन्हा", "पोलीस", "तक्रार"
-    ];
-    return criminalKeywords.some((kw) => text.includes(kw));
-  };
-
-  const isCivilMatter = (msg: any) => {
-    if (!msg || !msg.content) return false;
+    const getActionType = (msg: any): "civil" | "criminal" | "none" => {
+    if (!msg || !msg.content || msg.content.includes("🚨")) return "none";
     const text = (msg.content + " " + (msg.citations || []).join(" ")).toLowerCase();
     
-    // If it is strictly a crime/theft without civil dispute elements, do not show legal notice
-    const strictCrimeWords = ["stolen", "theft", "snatch", "robbery", "murder", "kidnap", "assault"];
-    if (strictCrimeWords.some(w => text.includes(w)) && !text.includes("rent") && !text.includes("tenant") && !text.includes("deposit") && !text.includes("consumer") && !text.includes("defective")) {
-      return false;
+    if (text.length < 50 && (text.includes("hello") || text.includes("how can i help") || text.includes("welcome"))) {
+      return "none";
     }
-    
-    const civilKeywords = [
-      "consumer", "rent", "tenant", "landlord", "deposit", "property", "contract", "salary",
-      "notice", "refund", "cheque", "defective", "agreement", "dispute", "transfer_of_property",
-      "rent control", "eviction", "किराया", "जमानत", "फ्लैट", "मालिक", "उपभोक्ता"
+
+    const crimeWords = [
+      "stolen", "theft", "snatch", "robbery", "murder", "kidnap", "assault", "harass",
+      "cyber", "scam", "fir", "police station", "cctns", "imei", "bns", "ipc", "bnss",
+      "bharatiya_nyaya_sanhita", "extortion", "attack", "violence", "threat", "चोरी", "धोखाधड़ी", "धमकी", "अपराध", "गुन्हा", "पोलीस", "तक्रार"
     ];
-    return civilKeywords.some((kw) => text.includes(kw));
+    
+    const civilWords = [
+      "rent", "tenant", "landlord", "deposit", "consumer", "refund", "defective",
+      "salary", "eviction", "contract", "agreement", "lease", "flat", "cheque",
+      "maharashtra_rent_control", "consumer_protection", "transfer_of_property",
+      "किराया", "जमानत", "फ्लैट", "मालिक", "उपभोक्ता"
+    ];
+
+    const hasCrime = crimeWords.some(w => text.includes(w));
+    const hasCivil = civilWords.some(w => text.includes(w));
+
+    // If it is a civil tenancy/consumer/contract matter, strictly show Legal Notice
+    if (hasCivil && !text.includes("assault") && !text.includes("stolen") && !text.includes("murder") && !text.includes("snatch")) {
+      return "civil";
+    }
+
+    // If it is a criminal matter (theft, stolen items, assault, harassment, cyber crime), strictly show Police FIR
+    if (hasCrime) {
+      return "criminal";
+    }
+
+    if (msg.citations && msg.citations.length > 0) {
+      if (msg.citations.some((c: string) => c.toLowerCase().includes("nyaya_sanhita"))) {
+        return "criminal";
+      }
+      return "civil";
+    }
+
+    return "none";
   };
 
-  const handleGenerateNotice = async (text: string) => {
+const handleGenerateNotice = async (text: string) => {
     if (isGenerating) return;
     setIsGenerating(true);
     try {
@@ -895,9 +909,9 @@ export default function NyaySetuPreview() {
                 </div>
               )}
 
-              {msg.role === "ai" && !msg.content.includes("🚨") && (isCivilMatter(msg) || isCriminalMatter(msg)) && (
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  {isCivilMatter(msg) && (
+              {msg.role === "ai" && getActionType(msg) !== "none" && (
+                <div className="mt-3 flex items-center gap-2">
+                  {getActionType(msg) === "civil" && (
                     <button
                       onClick={() => handleGenerateNotice(msg.content)}
                       disabled={isGenerating}
@@ -908,8 +922,8 @@ export default function NyaySetuPreview() {
                       {isGenerating ? "Drafting Notice..." : (t.generateNotice || "Generate Legal Notice")}
                     </button>
                   )}
-                  
-                  {isCriminalMatter(msg) && (
+
+                  {getActionType(msg) === "criminal" && (
                     <button
                       onClick={() => handleGenerateFIR(msg.content)}
                       disabled={isGeneratingFIR}
