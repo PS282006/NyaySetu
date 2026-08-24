@@ -9,8 +9,8 @@ from pydantic import BaseModel
 
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
-from db import get_db, User
-from auth import get_password_hash, create_access_token
+from db import get_db, User, AuditLog
+from auth import get_password_hash, create_access_token, get_current_user, verify_password
 
 from fastapi import FastAPI, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -235,3 +235,50 @@ def google_auth(token_data: GoogleToken, db: Session = Depends(get_db)):
     except ValueError:
         # Invalid token
         raise HTTPException(status_code=401, detail="Invalid Google authentication token")
+
+
+class AuthRequest(BaseModel):
+    email: str
+    password: str
+
+@app.post("/api/auth/register")
+def register(req: AuthRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == req.email).first()
+    if user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    hashed_pw = get_password_hash(req.password)
+    user = User(email=req.email, hashed_password=hashed_pw)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    access_token = create_access_token(data={"sub": str(user.id)})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@app.post("/api/auth/login")
+def login(req: AuthRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == req.email).first()
+    if not user or not verify_password(req.password, user.hashed_password):
+        raise HTTPException(status_code=400, detail="Incorrect email or password")
+    access_token = create_access_token(data={"sub": str(user.id)})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+import json
+
+@app.get("/api/history")
+def get_history(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    logs = db.query(AuditLog).filter(AuditLog.user_id == current_user.id).order_by(AuditLog.created_at.desc()).limit(20).all()
+    res = []
+    for log in logs:
+        cits = []
+        if log.citations:
+            try:
+                cits = json.loads(log.citations)
+            except:
+                pass
+        res.append({
+            "query": log.query,
+            "reply": log.response,
+            "citations": cits,
+            "confidence_score": log.confidence_score
+        })
+    return res
