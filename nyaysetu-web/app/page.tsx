@@ -458,6 +458,28 @@ export default function NyaySetuPreview() {
     }
   };
 
+  const isCriminalMatter = (msg: any) => {
+    if (!msg.citations || msg.citations.length === 0) return false;
+    const text = (msg.content + " " + (msg.citations || []).join(" ")).toLowerCase();
+    const criminalKeywords = [
+      "bharatiya_nyaya_sanhita", "bns", "ipc", "fir", "police", "theft", "stolen", "assault",
+      "harass", "fraud", "cheat", "crime", "criminal", "threat", "cyber", "scam", "violence",
+      "murder", "kidnap", "extortion", "attack", "robbery", "चोरी", "धोखाधड़ी", "धमकी", "अपराध", "गुन्हा", "पोलीस"
+    ];
+    return criminalKeywords.some((kw) => text.includes(kw));
+  };
+
+  const isCivilMatter = (msg: any) => {
+    if (!msg.citations || msg.citations.length === 0) return false;
+    const text = (msg.content + " " + (msg.citations || []).join(" ")).toLowerCase();
+    const civilKeywords = [
+      "consumer", "rent", "tenant", "landlord", "deposit", "property", "contract", "salary",
+      "notice", "refund", "cheque", "defective", "agreement", "dispute", "transfer_of_property",
+      "maharashtra_rent_control", "consumer_protection", "किराया", "जमानत", "फ्लैट"
+    ];
+    return civilKeywords.some((kw) => text.includes(kw)) || !isCriminalMatter(msg);
+  };
+
   const handleGenerateNotice = async (text: string) => {
     if (isGenerating) return;
     setIsGenerating(true);
@@ -909,31 +931,35 @@ export default function NyaySetuPreview() {
                 </div>
               )}
 
-              {msg.role === "ai" && !msg.content.includes("🚨") && (
+              {msg.role === "ai" && !msg.content.includes("🚨") && msg.citations && msg.citations.length > 0 && (
                 <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <button
-                    onClick={() => handleGenerateNotice(msg.content)}
-                    disabled={isGenerating}
-                    className="flex items-center w-fit gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-[1.02]"
-                    style={{ background: palette.accent, color: palette.accentText }}
-                  >
-                    <FileText size={15} />
-                    {isGenerating ? "Drafting Notice..." : (t.generateNotice || "Generate Legal Notice")}
-                  </button>
+                  {isCivilMatter(msg) && (
+                    <button
+                      onClick={() => handleGenerateNotice(msg.content)}
+                      disabled={isGenerating}
+                      className="flex items-center w-fit gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-[1.02]"
+                      style={{ background: palette.accent, color: palette.accentText }}
+                    >
+                      <FileText size={15} />
+                      {isGenerating ? "Drafting Notice..." : (t.generateNotice || "Generate Legal Notice")}
+                    </button>
+                  )}
                   
-                  <button
-                    onClick={() => handleGenerateFIR(msg.content)}
-                    disabled={isGeneratingFIR}
-                    className="flex items-center w-fit gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-[1.02] border"
-                    style={{ 
-                      background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)', 
-                      color: palette.heading, 
-                      borderColor: palette.pillBorder 
-                    }}
-                  >
-                    <ShieldAlert size={15} className="text-red-500" />
-                    {isGeneratingFIR ? "Drafting Complaint..." : (t.draftFIR || "Draft Police FIR (BNSS)")}
-                  </button>
+                  {isCriminalMatter(msg) && (
+                    <button
+                      onClick={() => handleGenerateFIR(msg.content)}
+                      disabled={isGeneratingFIR}
+                      className="flex items-center w-fit gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-[1.02] border"
+                      style={{ 
+                        background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)', 
+                        color: palette.heading, 
+                        borderColor: palette.pillBorder 
+                      }}
+                    >
+                      <ShieldAlert size={15} className="text-red-500" />
+                      {isGeneratingFIR ? "Drafting Complaint..." : (t.draftFIR || "Draft Police FIR (BNSS)")}
+                    </button>
+                  )}
                 </div>
               )}
               </div>
