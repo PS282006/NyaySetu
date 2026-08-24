@@ -341,11 +341,15 @@ def process_twilio_reply(phone_number: str, user_text: str, twilio_number: str =
             "Body": reply_text
         }
         
-        requests.post(url, data=payload, auth=auth)
-        print(f"[Twilio] Replied to {phone_number}")
-        
+        res = requests.post(url, data=payload, auth=auth)
+        print(f"[Twilio] Response ({res.status_code}): {res.text}")
+        if res.status_code >= 400:
+            print(f"[Twilio Error] Failed to send message: {res.text}")
+        else:
+            print(f"[Twilio] Successfully replied to {phone_number}")
+            
     except Exception as e:
-        print(f"[Twilio Background Error] {e}")
+        print(f"[Twilio Background Exception] {e}")
 
 @app.post("/api/auth/google")
 def google_auth(token_data: GoogleToken, db: Session = Depends(get_db)):
