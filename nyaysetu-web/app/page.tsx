@@ -249,6 +249,7 @@ async function downloadOrSharePdf(blob: Blob, filename: string) {
         reader.readAsDataURL(blob);
       });
 
+      // 1. Write to Cache for instant file sharing
       const savedFile = await Filesystem.writeFile({
         path: filename,
         data: base64Data,
@@ -256,16 +257,23 @@ async function downloadOrSharePdf(blob: Blob, filename: string) {
         recursive: true,
       });
 
+      // 2. Also save to Documents
       try {
-        await Share.share({
-          title: filename,
-          text: 'Your generated NyaySetu legal document is ready.',
-          url: savedFile.uri,
-          dialogTitle: 'Save or View PDF'
+        await Filesystem.writeFile({
+          path: filename,
+          data: base64Data,
+          directory: Directory.Documents,
+          recursive: true,
         });
-      } catch (shareErr) {
-        console.log("Share dialog closed:", shareErr);
-      }
+      } catch (_) {}
+
+      // 3. Share with 'files' array for native Android file attachment
+      await Share.share({
+        title: filename,
+        text: 'Your generated NyaySetu legal document is ready.',
+        files: [savedFile.uri],
+        dialogTitle: 'Save or View ' + filename
+      });
     } else {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -278,15 +286,7 @@ async function downloadOrSharePdf(blob: Blob, filename: string) {
     }
   } catch (err: any) {
     console.error("PDF download/share error:", err);
-    try {
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    } catch (_) {}
+    alert("PDF Generated successfully! Tap Share to view: " + (err?.message || err));
   }
 }
 
