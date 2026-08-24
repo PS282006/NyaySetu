@@ -112,7 +112,7 @@ def get_wolfram_answer(query: str):
 # 5. WEB UI ENDPOINTS
 # ==========================================
 @app.post("/api/chat")
-async def chat_endpoint(req: NyaySetuRequest):
+async def chat_endpoint(req: NyaySetuRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     user_text = req.message if req.message else req.query
     
     # 1. Fetch Legal Law Context (ChromaDB) with scores
@@ -153,6 +153,22 @@ async def chat_endpoint(req: NyaySetuRequest):
     # 3. Generate the final answer using BOTH law and math
     response = rag_chain.invoke({"context": context_text, "question": user_text})
     
+    
+    # Save Chat to History
+    try:
+        import json
+        log = AuditLog(
+            user_id=current_user.id,
+            query=user_text,
+            response=response.content,
+            citations=json.dumps(citations),
+            confidence_score=confidence
+        )
+        db.add(log)
+        db.commit()
+    except Exception as e:
+        print(f"Error saving chat history: {e}")
+
     return {
         "reply": response.content,
         "citations": citations,
