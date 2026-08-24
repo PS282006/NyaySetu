@@ -253,14 +253,19 @@ async function downloadOrSharePdf(blob: Blob, filename: string) {
         path: filename,
         data: base64Data,
         directory: Directory.Cache,
+        recursive: true,
       });
 
-      await Share.share({
-        title: filename,
-        text: 'Your generated NyaySetu legal document is ready.',
-        url: savedFile.uri,
-        dialogTitle: 'Save or View PDF'
-      });
+      try {
+        await Share.share({
+          title: filename,
+          text: 'Your generated NyaySetu legal document is ready.',
+          url: savedFile.uri,
+          dialogTitle: 'Save or View PDF'
+        });
+      } catch (shareErr) {
+        console.log("Share dialog closed:", shareErr);
+      }
     } else {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -269,15 +274,19 @@ async function downloadOrSharePdf(blob: Blob, filename: string) {
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+      setTimeout(() => window.URL.revokeObjectURL(url), 2000);
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error("PDF download/share error:", err);
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    a.click();
+    try {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (_) {}
   }
 }
 
@@ -588,22 +597,29 @@ export default function NyaySetuPreview() {
       const res = await fetch("https://nyaysetu-1qbc.onrender.com/api/generate-fir", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ incident_description: text, language: language })
+        body: JSON.stringify({ 
+          incident_description: text, 
+          issue_description: text,
+          language: language 
+        })
       });
       
-      if (!res.ok) throw new Error("Failed to generate Police FIR Complaint PDF");
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Server status ${res.status}: ${errText}`);
+      }
       
       const blob = await res.blob();
       await downloadOrSharePdf(blob, "NyaySetu_Police_FIR_Complaint.pdf");
     } catch (err: any) {
       console.error("FIR generation error:", err);
-      alert("Error generating the Police FIR Complaint document: " + (err.message || err));
+      alert("Error generating FIR complaint: " + (err.message || err));
     } finally {
       setIsGeneratingFIR(false);
     }
   };
 
-    const getActionType = (msg: any): "civil" | "criminal" | "none" => {
+  const getActionType = (msg: any): "civil" | "criminal" | "none" => {
     if (!msg || !msg.content || msg.content.includes("🚨")) return "none";
     const text = (msg.content + " " + (msg.citations || []).join(" ")).toLowerCase();
     
@@ -633,16 +649,23 @@ export default function NyaySetuPreview() {
       const res = await fetch("https://nyaysetu-1qbc.onrender.com/api/generate-notice", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ issue_description: text, language: language })
+        body: JSON.stringify({ 
+          issue_description: text, 
+          incident_description: text,
+          language: language 
+        })
       });
       
-      if (!res.ok) throw new Error("Failed to generate PDF");
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Server status ${res.status}: ${errText}`);
+      }
       
       const blob = await res.blob();
       await downloadOrSharePdf(blob, "NyaySetu_Demand_Notice.pdf");
     } catch (err: any) {
       console.error("Notice generation error:", err);
-      alert("Error generating the legal notice: " + (err.message || err));
+      alert("Error generating legal notice: " + (err.message || err));
     } finally {
       setIsGenerating(false);
     }
