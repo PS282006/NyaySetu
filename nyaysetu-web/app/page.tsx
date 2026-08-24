@@ -290,6 +290,49 @@ async function downloadOrSharePdf(blob: Blob, filename: string) {
   }
 }
 
+async function apiRequest(url: string, method: string = "GET", body?: any, token?: string) {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const isNative = typeof window !== "undefined" && (window as any).Capacitor?.isNativePlatform?.();
+
+  if (isNative && (window as any).Capacitor?.Plugins?.CapacitorHttp) {
+    try {
+      const options: any = {
+        url,
+        headers,
+        readTimeout: 60000,
+        connectTimeout: 30000,
+      };
+      if (body) {
+        options.data = body;
+      }
+      let res: any;
+      if (method.toUpperCase() === "POST") {
+        res = await (window as any).Capacitor.Plugins.CapacitorHttp.post(options);
+      } else {
+        res = await (window as any).Capacitor.Plugins.CapacitorHttp.get(options);
+      }
+      return {
+        ok: res.status >= 200 && res.status < 300,
+        status: res.status,
+        json: async () => res.data,
+        text: async () => (typeof res.data === "string" ? res.data : JSON.stringify(res.data)),
+      };
+    } catch (nativeHttpErr) {
+      console.warn("CapacitorHttp fallback to fetch:", nativeHttpErr);
+    }
+  }
+
+  return await fetch(url, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+}
+
 export default function NyaySetuPreview() {
   // Trigger re-render translation
 
@@ -497,22 +540,19 @@ export default function NyaySetuPreview() {
   const sendMessage = async () => {
     if (!input.trim()) return;
 
-    const newMessages = [...messages, { role: "user", content: input }];
+    const userPrompt = input.trim();
+    const newMessages = [...messages, { role: "user", content: userPrompt }];
     setMessages(newMessages);
     setInput("");
     setIsLoading(true);
 
     try {
-      const headers: any = { "Content-Type": "application/json" };
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-
-      const response = await fetch("https://nyaysetu-1qbc.onrender.com/api/chat", {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ query: input, message: input, language: language }),
-      });
+      const response = await apiRequest(
+        "https://nyaysetu-1qbc.onrender.com/api/chat",
+        "POST",
+        { query: userPrompt, message: userPrompt, language: language },
+        token || localStorage.getItem("nyaysetu_token") || undefined
+      );
 
       const rawText = await response.text();
       let data: any = null;
@@ -526,32 +566,32 @@ export default function NyaySetuPreview() {
       if (!response.ok) {
         setMessages([...newMessages, { 
           role: "ai", 
-          content: `🚨 Error ${response.status}: Please try again in a moment.` 
+          content: `🚨 Server returned status ${response.status}: Please try again in a moment.` 
         }]);
         setIsLoading(false);
         return;
       }
 
-      const aiReply = data.reply || "Something went wrong. Please try again.";
+      const aiReply = data?.reply || "Something went wrong. Please try again.";
       setMessages([...newMessages, { 
         role: "ai", 
         content: aiReply,
-        citations: data.citations,
-        confidence_score: data.confidence_score
+        citations: data?.citations,
+        confidence_score: data?.confidence_score
       }]);
       
       const newHistItem: HistoryItem = {
         id: Date.now(),
-        query: input,
+        query: userPrompt,
         reply: aiReply,
-        citations: data.citations,
-        confidence_score: data.confidence_score,
+        citations: data?.citations,
+        confidence_score: data?.confidence_score,
         created_at: "Just now"
       };
       setHistoryList(prev => [newHistItem, ...prev]);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error connecting to backend:", error);
-      setMessages([...newMessages, { role: "ai", content: "Unable to reach the NyaySetu server. Please check your connection and try again." }]);
+      setMessages([...newMessages, { role: "ai", content: "Unable to reach the NyaySetu server: " + (error?.message || "Please check connection and try again.") }]);
     } finally {
       setIsLoading(false);
     }

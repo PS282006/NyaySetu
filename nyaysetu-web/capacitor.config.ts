@@ -4,6 +4,11 @@ const config: CapacitorConfig = {
   appId: 'com.nyaysetu.app',
   appName: 'NyaySetu',
   webDir: 'out',
+  plugins: {
+    CapacitorHttp: {
+      enabled: true
+    }
+  },
   android: {
     allowMixedContent: true,
     captureInput: true,
