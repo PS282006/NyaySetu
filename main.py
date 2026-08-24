@@ -15,19 +15,19 @@ from auth import get_password_hash, create_access_token, get_current_user, verif
 
 from fastapi import FastAPI, BackgroundTasks, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, PlainTextResponse
-from pydantic import BaseModel
-from langchain_chroma import Chroma
-from langchain_groq import ChatGroq
-from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
-from langchain_core.prompts import ChatPromptTemplate
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet
-from datetime import datetime
+from fastapi.responses import FileResponse, PlainTextResponse, JSONResponse
+import traceback
 
 app = FastAPI(title="NyaySetu Legal API")
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    tb = traceback.format_exc()
+    print("GLOBAL EXCEPTION:\n", tb)
+    return JSONResponse(
+        status_code=500,
+        content={"error": str(exc), "traceback": tb}
+    )
 
 @app.get("/")
 def health_check():
