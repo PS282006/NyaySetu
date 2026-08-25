@@ -8,3 +8,10 @@ test_*.pdf
 audit_*.py
 deep_audit.py
 *.db
+*.sqlite3
+*.db
+__pycache__/
+*.pdf
+generate_icons.py
+read_pdf.py
+rebuild_*.py
