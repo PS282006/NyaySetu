@@ -1,1 +1,10 @@
 .env
+
+# Scratch and test audit files
+patch_*.py
+fix_*.py
+test_*.py
+test_*.pdf
+audit_*.py
+deep_audit.py
+*.db
