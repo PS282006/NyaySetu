@@ -73,6 +73,11 @@ Whether dealing with an unpaid security deposit, workplace harassment, a defecti
 * **Technical Reality:** Meta's WhatsApp Business API requires mandatory multi-day enterprise verification and business documentation approval, which could not be completed within a rapid hackathon sprint.
 * **Engineered Solution:** Built a standalone, responsive Web App and Native Android APK that deliver the same one-tap, zero-friction experience immediately.
 
+### 3. Inference Migration from OpenAI GPT to Groq LPUs
+* **Original Implementation:** The legal assistance pipeline was initially prototyped and built using OpenAI GPT models.
+* **Technical Reality:** Standard API tiers suffered from restrictive rate limits and variable latency during multi-turn statutory document drafting.
+* **Engineered Solution:** Migrated inference to Groq Cloud LPUs running `openai/gpt-oss-20b` (with `openai/gpt-oss-120b` fallback), unlocking higher throughput, expanded token limits, and reliable sub-second response times.
+
 ---
 
 ## 🔮 Future Expansion Roadmap
@@ -92,7 +97,7 @@ Whether dealing with an unpaid security deposit, workplace harassment, a defecti
 | **Frontend** | Next.js 15, React 19, TypeScript, Tailwind CSS, Lucide Icons |
 | **Mobile App** | Capacitor 7 Native Android (SDK 36, Java 17) |
 | **Backend API** | FastAPI (Python 3.11+), Uvicorn |
-| **AI & LLM** | Groq Cloud LPUs (`openai/gpt-oss-20b` with failover) |
+| **AI & LLM** | Groq Cloud LPUs (`openai/gpt-oss-20b` primary, `openai/gpt-oss-120b` fallback; migrated from OpenAI GPT for higher throughput and token limits) |
 | **Vector DB** | ChromaDB with FastEmbed (`BAAI/bge-small-en-v1.5`) |
 | **Math Engine** | Wolfram Alpha API |
 | **PDF Engine** | ReportLab Document Engine |
