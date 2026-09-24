@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "cd nyaysetu-web && npm run build",
+    "build": "cd nyaysetu-web && npm install --legacy-peer-deps && npm run build",
     "dev": "cd nyaysetu-web && npm run dev",
     "start": "cd nyaysetu-web && npm start"
   }
